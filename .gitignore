@@ -1,0 +1,46 @@
+# Arquivos específicos do Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.temp
+/logs/*.log
+/logs/*.txt
+
+# Configurações locais específicas
+config/database.php
+config/local_config.php
+
+# Cache
+cache/
+/application/logs/cache/
+
+# Arquivos de backup
+*.bak
+*.backup
+*.old
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Arquivos do sistema
+.DS_Store
+*~
+
+# Tokens e chaves (segurança)
+*.key
+*.pem
+secrets.txt
+
+# Dependências (se houver)
+vendor/
+node_modules/
+
+# Arquivos de configuração sensíveis
+.env
+.env.local 
