@@ -1,47 +1,58 @@
-# WON API v2.1.1 - Versão Limpa e Funcional
+# WON API v2.1.1 - Sistema Básico REAL
 
-API RESTful simples e funcional para Perfex CRM com instalação Easy Install.
+API RESTful **SIMPLES** para Perfex CRM. Esta documentação reflete **EXATAMENTE** o que está implementado.
 
-## ✅ Características
+## ⚠️ **IMPORTANTE: O que esta versão REALMENTE faz**
 
-- **Versão Única:** 2.1.1 - sem conflitos de versão
-- **Easy Install:** Instalação ultra-simples via Perfex CRM
-- **CRUD Completo:** GET, POST, PUT, DELETE para todas as tabelas
-- **Autenticação:** X-API-TOKEN (padrão Perfex CRM)
-- **CORS:** Habilitado para máxima compatibilidade
-- **Clean Code:** Arquitetura simplificada e sem dependências órfãs
+Esta é uma versão **BÁSICA** com apenas CRUD simples. **NÃO possui** funcionalidades avançadas.
 
-## 📊 Endpoints Disponíveis
+## ✅ **O que REALMENTE está implementado**
 
-| Tabela | Endpoint | Descrição |
-|--------|----------|-----------|
-| Clientes | `/api/clients` | Gerenciar clientes |
-| Projetos | `/api/projects` | Gerenciar projetos |
-| Tarefas | `/api/tasks` | Gerenciar tarefas |
-| Faturas | `/api/invoices` | Gerenciar faturas |
-| Leads | `/api/leads` | Gerenciar leads |
-| Funcionários | `/api/staff` | Gerenciar funcionários |
+- ✅ **CRUD Básico:** GET, POST, PUT, DELETE para 6 tabelas
+- ✅ **Autenticação:** X-API-TOKEN (padrão Perfex CRM)  
+- ✅ **CORS:** Headers básicos habilitados
+- ✅ **Busca por CPF/CNPJ:** Endpoint `/join`
+- ✅ **Status Público:** Endpoint `/status`
+- ✅ **Paginação Simples:** `?page=1&limit=20`
+- ✅ **Interface Admin:** Configurações básicas
+- ✅ **Easy Install:** Instalação ultra-simples
 
-### Endpoints Especiais
+## ❌ **O que NÃO está implementado**
 
-- `/status` - Status da API (público)
-- `/join?vat=CPF` - Buscar cliente por CPF/CNPJ
+- ❌ **Rate limiting** (removido)
+- ❌ **Validações robustas** de CPF/CNPJ
+- ❌ **Sistema de logs avançado**
+- ❌ **Endpoints especializados** (estimate/convert, invoice/send, etc.)
+- ❌ **Dashboard de métricas**
+- ❌ **Bibliotecas auxiliares** (Won_validator, Won_error_handler)
+- ❌ **Configurações avançadas**
 
-## 🚀 Instalação
+## 📊 **Tabelas Suportadas (6 total)**
 
-1. Faça upload para `modules/won_api/`
-2. Ative via Admin → Módulos
-3. Configure o token em Admin → WON API → Configurações
+| Tabela | Endpoint | Campos Obrigatórios |
+|--------|----------|---------------------|
+| Clientes | `/api/clients` | `company` |
+| Projetos | `/api/projects` | `name`, `clientid` |
+| Tarefas | `/api/tasks` | `name` |
+| Faturas | `/api/invoices` | `clientid` |
+| Leads | `/api/leads` | `name` |
+| Funcionários | `/api/staff` | `firstname`, `lastname`, `email` |
 
-## 📖 Uso Básico
+## 🚀 **Instalação**
 
-### Listar Clientes
+1. Upload para `modules/won_api/`
+2. Ativar via Admin → Módulos  
+3. Configurar em Admin → WON API → Configurações
+
+## 📖 **Uso Real**
+
+### **Listar Clientes**
 ```bash
 curl -X GET "https://seucrm.com/won_api/won/api/clients" \
      -H "X-API-TOKEN: seu_token_aqui"
 ```
 
-### Criar Cliente
+### **Criar Cliente**  
 ```bash
 curl -X POST "https://seucrm.com/won_api/won/api/clients" \
      -H "X-API-TOKEN: seu_token_aqui" \
@@ -49,66 +60,114 @@ curl -X POST "https://seucrm.com/won_api/won/api/clients" \
      -d '{"company": "Empresa LTDA"}'
 ```
 
-### Buscar por CPF/CNPJ
+### **Buscar por CPF/CNPJ**
 ```bash
 curl -X GET "https://seucrm.com/won_api/won/join?vat=12345678901" \
      -H "X-API-TOKEN: seu_token_aqui"
 ```
 
-## 🔧 Funcionalidades
+### **Status da API (público)**
+```bash
+curl -X GET "https://seucrm.com/won_api/won/status"
+```
 
-- ✅ CRUD completo para 6 tabelas principais
-- ✅ Paginação com `?page=1&limit=20`
-- ✅ Busca com `?search=termo`
-- ✅ Filtros por campos específicos
-- ✅ Validação de campos obrigatórios
-- ✅ Campos readonly protegidos
-- ✅ Headers CORS configurados
-- ✅ Logs básicos do sistema
-- ✅ Interface administrativa simples
+## 🔧 **Funcionalidades Reais**
 
-## 🛡️ Segurança
+- ✅ **CRUD:** GET (listar/obter), POST (criar), PUT (atualizar), DELETE (excluir)
+- ✅ **Paginação:** `?page=1&limit=20` (máximo 100 por página)
+- ✅ **Busca Simples:** `?search=termo` (apenas campo `company`)
+- ✅ **Validação Básica:** Campos obrigatórios e readonly
+- ✅ **CORS:** Headers básicos para integração frontend
+- ✅ **Logs Simples:** Sistema nativo CodeIgniter
 
-- Autenticação obrigatória via X-API-TOKEN
-- Validação de permissões administrativas
-- Proteção contra SQL injection
-- Headers de segurança configurados
-- Rate limiting removido (conforme solicitado)
+## 🛡️ **Segurança**
 
-## 📝 Changelog v2.1.1
+- ✅ **Autenticação obrigatória:** X-API-TOKEN em todas as rotas (exceto `/status`)
+- ✅ **Validação de permissões:** Apenas admins acessam configurações
+- ✅ **Proteção SQL:** Uso de query builder nativo CI
+- ✅ **Headers seguros:** Content-Type, CORS básicos
 
-### ✅ Correções Implementadas
-- Removido conflito de versões (agora só 2.1.1)
-- Removidas bibliotecas órfãs não utilizadas
-- Removidas rotas para endpoints inexistentes
-- Simplificada arquitetura sem dependências circulares
-- Removidos testes para funcionalidades inexistentes
-- Criada instalação ultra-simples
-- Interface administrativa funcional
-- Controlador principal limpo e defensivo
+## 📱 **Compatibilidade**
 
-### ❌ Removido (Causava problemas)
-- Bibliotecas Won_error_handler, Won_validator, Won_operations
-- Configurações externas órfãs
-- Rate limiting complexo
-- Endpoints especializados não implementados
-- Arquivos de versões conflitantes
-- Testes para funcionalidades inexistentes
+- ✅ **Perfex CRM:** 2.9.2+ (Easy Install)
+- ✅ **n8n:** Headers X-API-TOKEN compatíveis
+- ✅ **Zapier:** REST API básica
+- ✅ **Power Automate:** JSON responses
+- ✅ **PHP:** 7.4+
+- ✅ **MySQL:** 5.7+
 
-## 🎯 Compatibilidade
+## 📂 **Estrutura Real**
 
-- ✅ Perfex CRM 2.9.2+
-- ✅ Easy Install
-- ✅ n8n, Zapier, Power Automate
-- ✅ PHP 7.4+
-- ✅ MySQL 5.7+
+```
+won_api/
+├── won_api.php              # Arquivo principal
+├── install.php              # Instalação mínima
+├── controllers/
+│   ├── Won.php              # Controller API (340 linhas)
+│   └── Won_api.php          # Controller admin (103 linhas)
+├── views/
+│   ├── configuracoes.php    # Configurações (settings)
+│   ├── docs.php             # Documentação  
+│   └── logs.php             # Logs básicos
+├── config/
+│   └── routes.php           # Rotas implementadas
+├── README.md                # Esta documentação
+└── CHANGELOG.md             # Histórico de mudanças
+```
 
-## 📞 Suporte
+## 📝 **Responses da API**
+
+### **Sucesso:**
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Registro criado",
+  "timestamp": 1703123456,
+  "version": "2.1.1",
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 50,
+    "total_pages": 3
+  }
+}
+```
+
+### **Erro:**
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Token X-API-TOKEN obrigatório",
+  "timestamp": 1703123456,
+  "version": "2.1.1"
+}
+```
+
+## 🎯 **Use Cases Reais**
+
+### ✅ **O que você PODE fazer:**
+- Integrar com n8n para automações básicas
+- Criar/listar/atualizar/deletar registros
+- Buscar clientes por CPF/CNPJ
+- Paginar resultados
+- Busca simples por texto
+
+### ❌ **O que você NÃO pode fazer:**
+- Rate limiting (não implementado)
+- Validações avançadas (não implementado)
+- Endpoints especializados (não implementado)
+- Métricas ou dashboards (não implementado)
+- Logs avançados (não implementado)
+
+## 📞 **Suporte**
 
 - **Autor:** Matheus Baiense
-- **GitHub:** https://github.com/Matheusbaiense
-- **Versão:** 2.1.1 (Limpa e Funcional)
+- **GitHub:** https://github.com/Matheusbaiense/won_api
+- **Versão:** 2.1.1 (Sistema Básico)
+- **Status:** Funcional para CRUD básico
 
 ---
 
-**WON API v2.1.1** - Versão simplificada e 100% funcional 🚀 
+**🎯 WON API v2.1.1** - Sistema básico que **realmente funciona** para CRUD simples 

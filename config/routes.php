@@ -2,19 +2,20 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * WON API Routes v2.1.1 - APENAS O NECESSÁRIO
- * Rotas simplificadas para endpoints que realmente existem
+ * WON API Routes v2.1.1 - APENAS ROTAS IMPLEMENTADAS
+ * Sem rotas fantasma - todas as rotas aqui funcionam
  */
 
-// Rotas da API
+// Rotas da API (implementadas em Won.php)
 $route['won_api/won/api/(:any)/(:num)'] = 'won_api/won/api/$1/$2';
 $route['won_api/won/api/(:any)'] = 'won_api/won/api/$1';
 $route['won_api/won/join'] = 'won_api/won/join';
 $route['won_api/won/status'] = 'won_api/won/status';
 
-// Rotas administrativas
+// Rotas administrativas (implementadas em Won_api.php)
 $route['admin/won_api/settings'] = 'won_api/won_api/settings';
 $route['admin/won_api/docs'] = 'won_api/won_api/docs';
+$route['admin/won_api/logs'] = 'won_api/won_api/logs';
 $route['admin/won_api/regenerate_token'] = 'won_api/won_api/regenerate_token';
 
 // Rotas para endpoints especializados (novos na v2.1.2)

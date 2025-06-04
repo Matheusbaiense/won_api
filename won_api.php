@@ -44,6 +44,13 @@ function won_api_init_menu()
         'href' => admin_url('won_api/docs'),
         'position' => 10,
     ]);
+
+    $CI->app_menu->add_sidebar_children_item('won_api', [
+        'slug' => 'won_api_logs',
+        'name' => 'Logs',
+        'href' => admin_url('won_api/logs'),
+        'position' => 15,
+    ]);
 }
 
 // Hook de ativação

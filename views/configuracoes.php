@@ -12,7 +12,7 @@
                         
                         <div class="alert alert-success">
                             <strong>✅ WON API v2.1.1 Ativo</strong><br>
-                            Sistema simplificado com CORS habilitado
+                            Sistema simplificado - CRUD básico funcional
                         </div>
                         
                         <div class="form-group">
@@ -31,21 +31,33 @@
                             </div>
                         </div>
                         
-                        <h5>📡 Endpoints Disponíveis:</h5>
+                        <h5>📡 Endpoints Realmente Implementados:</h5>
                         <ul>
-                            <li><code>/won_api/won/status</code> - Status da API (público)</li>
-                            <li><code>/won_api/won/api/clients</code> - Gerenciar clientes</li>
-                            <li><code>/won_api/won/api/projects</code> - Gerenciar projetos</li>
-                            <li><code>/won_api/won/api/tasks</code> - Gerenciar tarefas</li>
-                            <li><code>/won_api/won/api/invoices</code> - Gerenciar faturas</li>
-                            <li><code>/won_api/won/api/leads</code> - Gerenciar leads</li>
-                            <li><code>/won_api/won/api/staff</code> - Gerenciar funcionários</li>
-                            <li><code>/won_api/won/join?vat=CPF</code> - Buscar por CPF/CNPJ</li>
+                            <li><code>/won_api/won/status</code> - Status da API (público) ✅</li>
+                            <li><code>/won_api/won/api/clients</code> - CRUD clientes ✅</li>
+                            <li><code>/won_api/won/api/projects</code> - CRUD projetos ✅</li>
+                            <li><code>/won_api/won/api/tasks</code> - CRUD tarefas ✅</li>
+                            <li><code>/won_api/won/api/invoices</code> - CRUD faturas ✅</li>
+                            <li><code>/won_api/won/api/leads</code> - CRUD leads ✅</li>
+                            <li><code>/won_api/won/api/staff</code> - CRUD funcionários ✅</li>
+                            <li><code>/won_api/won/join?vat=CPF</code> - Buscar por CPF/CNPJ ✅</li>
                         </ul>
+                        
+                        <div class="alert alert-warning">
+                            <strong>⚠️ O que NÃO está implementado:</strong><br>
+                            • Rate limiting avançado<br>
+                            • Validações robustas de CPF/CNPJ<br>
+                            • Endpoints especializados (estimate/convert, etc.)<br>
+                            • Sistema de logs avançado<br>
+                            • Dashboard de métricas
+                        </div>
                         
                         <div class="text-center">
                             <a href="<?php echo admin_url('won_api/docs'); ?>" class="btn btn-primary">
                                 <i class="fa fa-book"></i> Ver Documentação
+                            </a>
+                            <a href="<?php echo admin_url('won_api/logs'); ?>" class="btn btn-info">
+                                <i class="fa fa-list"></i> Ver Logs
                             </a>
                             <a href="<?php echo base_url('won_api/won/status'); ?>" 
                                class="btn btn-success" target="_blank">
