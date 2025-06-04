@@ -18,6 +18,7 @@ try {
     // Configurações básicas
     add_option('won_api_version', '2.1.1', 1);
     add_option('won_api_cors_enabled', '1', 1);
+    add_option('won_api_cors_origin', '*', 1); // Configurável para produção
     
     log_message('info', '[WON API] Instalação concluída v2.1.1');
     return true;

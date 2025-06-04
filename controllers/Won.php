@@ -55,10 +55,12 @@ class Won extends APP_Controller
     private function setup_cors()
     {
         if (!headers_sent()) {
-            header('Access-Control-Allow-Origin: *');
+            // CORS mais restritivo para produção
+            $cors_origin = get_option('won_api_cors_origin') ?: '*';
+            header('Access-Control-Allow-Origin: ' . $cors_origin);
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
             header('Access-Control-Allow-Headers: X-API-TOKEN, Content-Type, Accept');
-            header('Access-Control-Max-Age: 86400');
+            header('Access-Control-Max-Age: 3600'); // Reduzido para 1 hora
             
             if ($this->input->method() === 'options') {
                 $this->output->set_status_header(204);
@@ -73,6 +75,8 @@ class Won extends APP_Controller
             header('Content-Type: application/json; charset=utf-8');
             header('X-WON-API-Version: 2.1.1');
             header('X-Robots-Tag: noindex');
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: DENY');
         }
     }
     
@@ -82,15 +86,19 @@ class Won extends APP_Controller
             'success' => $success,
             'data' => $data,
             'message' => $message,
-            'timestamp' => time(),
-            'version' => '2.1.1'
+            'timestamp' => time()
         ];
         
         if ($meta) {
             $response['meta'] = $meta;
         }
         
-        log_message('info', '[WON API] ' . ($success ? 'Success' : 'Error') . ': ' . $this->uri->uri_string());
+        // Log melhorado com contexto de segurança
+        $log_msg = '[WON API] ' . ($success ? 'Success' : 'Error') . ': ' . $this->uri->uri_string();
+        if (!$success && $status >= 400) {
+            $log_msg .= ' | IP: ' . $this->input->ip_address() . ' | User-Agent: ' . $this->input->user_agent();
+        }
+        log_message('info', $log_msg);
         
         $this->output
             ->set_status_header($status)
@@ -104,21 +112,43 @@ class Won extends APP_Controller
         $expected_token = get_option('won_api_token');
         
         if (empty($token)) {
+            $this->log_security_event('Missing token', $this->input->ip_address());
             $this->json_response(false, null, 'Token X-API-TOKEN obrigatório', 401);
             return false;
         }
         
         if (empty($expected_token)) {
+            $this->log_security_event('Token not configured', $this->input->ip_address());
             $this->json_response(false, null, 'Token não configurado no sistema', 500);
             return false;
         }
         
         if (!hash_equals($expected_token, $token)) {
+            $this->log_security_event('Invalid token attempt', $this->input->ip_address());
             $this->json_response(false, null, 'Token inválido', 401);
             return false;
         }
         
         return true;
+    }
+    
+    /**
+     * Log de eventos de segurança
+     */
+    private function log_security_event($event, $ip)
+    {
+        log_message('warning', "[WON API SECURITY] {$event} from IP: {$ip} | URI: " . $this->uri->uri_string() . " | User-Agent: " . $this->input->user_agent());
+    }
+    
+    /**
+     * Sanitizar entrada de busca
+     */
+    private function sanitize_search($search)
+    {
+        // Remover caracteres perigosos
+        $search = preg_replace('/[<>"\']/', '', $search);
+        $search = trim($search);
+        return strlen($search) >= 2 ? $search : null; // Mínimo 2 caracteres
     }
     
     public function status()
@@ -190,13 +220,19 @@ class Won extends APP_Controller
             $limit = min((int)$this->input->get('limit') ?: 20, 100);
             $offset = ($page - 1) * $limit;
             
-            // Busca
+            // Busca com campo apropriado para cada tabela
             $search = $this->input->get('search');
             if ($search) {
-                $this->db->like('company', $search); // Campo padrão para busca
+                $search = $this->sanitize_search($search);
+                if ($search) {
+                    $search_field = $this->get_search_field($config['table']);
+                    if ($search_field) {
+                        $this->db->like($search_field, $search);
+                    }
+                }
             }
             
-            // Total de registros
+            // Total de registros (clonar antes de aplicar limit)
             $total_query = clone $this->db;
             $total = $total_query->count_all_results(db_prefix() . $config['table']);
             
@@ -216,6 +252,23 @@ class Won extends APP_Controller
         }
     }
     
+    /**
+     * Obter campo de busca apropriado para cada tabela
+     */
+    private function get_search_field($table)
+    {
+        $search_fields = [
+            'clients' => 'company',
+            'projects' => 'name',
+            'tasks' => 'name',
+            'invoices' => 'number',
+            'leads' => 'name',
+            'staff' => 'firstname'
+        ];
+        
+        return isset($search_fields[$table]) ? $search_fields[$table] : null;
+    }
+    
     private function handle_post($config)
     {
         $data = json_decode($this->input->raw_input_stream, true);
@@ -225,35 +278,40 @@ class Won extends APP_Controller
             return;
         }
         
-        // Verificar campos obrigatórios
-        foreach ($config['required'] as $field) {
-            if (empty($data[$field])) {
-                $this->json_response(false, null, "Campo obrigatório: {$field}", 400);
-                return;
+        try {
+            // Verificar campos obrigatórios
+            foreach ($config['required'] as $field) {
+                if (empty($data[$field])) {
+                    $this->json_response(false, null, "Campo obrigatório: {$field}", 400);
+                    return;
+                }
             }
+            
+            // Remover campos somente leitura
+            foreach ($config['readonly'] as $field) {
+                unset($data[$field]);
+            }
+            
+            $data['datecreated'] = date('Y-m-d H:i:s');
+            
+            $this->db->insert(db_prefix() . $config['table'], $data);
+            $insert_id = $this->db->insert_id();
+            
+            if (!$insert_id) {
+                throw new Exception('Falha ao inserir registro');
+            }
+            
+            // Retornar registro criado
+            $this->db->where($config['primary_key'], $insert_id);
+            $query = $this->db->get(db_prefix() . $config['table']);
+            $record = $query->row_array();
+            
+            $this->json_response(true, $record, 'Registro criado', 201);
+            
+        } catch (Exception $e) {
+            log_message('error', '[WON API] Erro ao criar registro: ' . $e->getMessage() . ' | Tabela: ' . $config['table']);
+            $this->json_response(false, null, 'Erro interno do servidor', 500);
         }
-        
-        // Remover campos somente leitura
-        foreach ($config['readonly'] as $field) {
-            unset($data[$field]);
-        }
-        
-        $data['datecreated'] = date('Y-m-d H:i:s');
-        
-        $this->db->insert(db_prefix() . $config['table'], $data);
-        $insert_id = $this->db->insert_id();
-        
-        if (!$insert_id) {
-            $this->json_response(false, null, 'Erro ao criar registro', 500);
-            return;
-        }
-        
-        // Retornar registro criado
-        $this->db->where($config['primary_key'], $insert_id);
-        $query = $this->db->get(db_prefix() . $config['table']);
-        $record = $query->row_array();
-        
-        $this->json_response(true, $record, 'Registro criado', 201);
     }
     
     private function handle_put($config, $id)
@@ -263,34 +321,40 @@ class Won extends APP_Controller
             return;
         }
         
-        // Verificar se existe
-        $this->db->where($config['primary_key'], $id);
-        if ($this->db->count_all_results(db_prefix() . $config['table']) === 0) {
-            $this->json_response(false, null, 'Registro não encontrado', 404);
-            return;
+        try {
+            // Verificar se existe
+            $this->db->where($config['primary_key'], $id);
+            if ($this->db->count_all_results(db_prefix() . $config['table']) === 0) {
+                $this->json_response(false, null, 'Registro não encontrado', 404);
+                return;
+            }
+            
+            $data = json_decode($this->input->raw_input_stream, true);
+            
+            if (!$data) {
+                $this->json_response(false, null, 'Dados JSON inválidos', 400);
+                return;
+            }
+            
+            // Remover campos somente leitura
+            foreach ($config['readonly'] as $field) {
+                unset($data[$field]);
+            }
+            
+            $this->db->where($config['primary_key'], $id);
+            $this->db->update(db_prefix() . $config['table'], $data);
+            
+            // Retornar registro atualizado
+            $this->db->where($config['primary_key'], $id);
+            $query = $this->db->get(db_prefix() . $config['table']);
+            $record = $query->row_array();
+            
+            $this->json_response(true, $record, 'Registro atualizado');
+            
+        } catch (Exception $e) {
+            log_message('error', '[WON API] Erro ao atualizar registro: ' . $e->getMessage() . ' | Tabela: ' . $config['table'] . ' | ID: ' . $id);
+            $this->json_response(false, null, 'Erro interno do servidor', 500);
         }
-        
-        $data = json_decode($this->input->raw_input_stream, true);
-        
-        if (!$data) {
-            $this->json_response(false, null, 'Dados JSON inválidos', 400);
-            return;
-        }
-        
-        // Remover campos somente leitura
-        foreach ($config['readonly'] as $field) {
-            unset($data[$field]);
-        }
-        
-        $this->db->where($config['primary_key'], $id);
-        $this->db->update(db_prefix() . $config['table'], $data);
-        
-        // Retornar registro atualizado
-        $this->db->where($config['primary_key'], $id);
-        $query = $this->db->get(db_prefix() . $config['table']);
-        $record = $query->row_array();
-        
-        $this->json_response(true, $record, 'Registro atualizado');
     }
     
     private function handle_delete($config, $id)
@@ -300,15 +364,21 @@ class Won extends APP_Controller
             return;
         }
         
-        $this->db->where($config['primary_key'], $id);
-        $affected = $this->db->delete(db_prefix() . $config['table']);
-        
-        if ($this->db->affected_rows() === 0) {
-            $this->json_response(false, null, 'Registro não encontrado', 404);
-            return;
+        try {
+            $this->db->where($config['primary_key'], $id);
+            $this->db->delete(db_prefix() . $config['table']);
+            
+            if ($this->db->affected_rows() === 0) {
+                $this->json_response(false, null, 'Registro não encontrado', 404);
+                return;
+            }
+            
+            $this->json_response(true, null, 'Registro excluído');
+            
+        } catch (Exception $e) {
+            log_message('error', '[WON API] Erro ao excluir registro: ' . $e->getMessage() . ' | Tabela: ' . $config['table'] . ' | ID: ' . $id);
+            $this->json_response(false, null, 'Erro interno do servidor', 500);
         }
-        
-        $this->json_response(true, null, 'Registro excluído');
     }
     
     public function join()

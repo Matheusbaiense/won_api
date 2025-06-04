@@ -75,17 +75,19 @@ curl -X GET "https://seucrm.com/won_api/won/status"
 
 - ✅ **CRUD:** GET (listar/obter), POST (criar), PUT (atualizar), DELETE (excluir)
 - ✅ **Paginação:** `?page=1&limit=20` (máximo 100 por página)
-- ✅ **Busca Simples:** `?search=termo` (apenas campo `company`)
+- ✅ **Busca Inteligente:** `?search=termo` (campo apropriado por tabela)
 - ✅ **Validação Básica:** Campos obrigatórios e readonly
 - ✅ **CORS:** Headers básicos para integração frontend
-- ✅ **Logs Simples:** Sistema nativo CodeIgniter
+- ✅ **Logs Melhorados:** Sistema nativo CodeIgniter com contexto de segurança
 
 ## 🛡️ **Segurança**
 
 - ✅ **Autenticação obrigatória:** X-API-TOKEN em todas as rotas (exceto `/status`)
 - ✅ **Validação de permissões:** Apenas admins acessam configurações
 - ✅ **Proteção SQL:** Uso de query builder nativo CI
-- ✅ **Headers seguros:** Content-Type, CORS básicos
+- ✅ **Headers seguros:** Content-Type, CORS configuráveis, X-Frame-Options
+- ✅ **Logs de Segurança:** Tentativas de autenticação inválidas logadas
+- ✅ **Sanitização:** Entrada de busca sanitizada contra XSS
 
 ## 📱 **Compatibilidade**
 
@@ -103,11 +105,11 @@ won_api/
 ├── won_api.php              # Arquivo principal
 ├── install.php              # Instalação mínima
 ├── controllers/
-│   ├── Won.php              # Controller API (340 linhas)
-│   └── Won_api.php          # Controller admin (103 linhas)
+│   ├── Won.php              # Controller API (390 linhas)
+│   └── Won_api.php          # Controller admin (104 linhas)
 ├── views/
-│   ├── configuracoes.php    # Configurações (settings)
-│   ├── docs.php             # Documentação  
+│   ├── settings.php         # Configurações administrativas
+│   ├── api_documentation.php # Documentação da API
 │   └── logs.php             # Logs básicos
 ├── config/
 │   └── routes.php           # Rotas implementadas
@@ -124,7 +126,6 @@ won_api/
   "data": {...},
   "message": "Registro criado",
   "timestamp": 1703123456,
-  "version": "2.1.1",
   "meta": {
     "page": 1,
     "limit": 20,
@@ -140,8 +141,7 @@ won_api/
   "success": false,
   "data": null,
   "message": "Token X-API-TOKEN obrigatório",
-  "timestamp": 1703123456,
-  "version": "2.1.1"
+  "timestamp": 1703123456
 }
 ```
 
