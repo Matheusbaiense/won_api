@@ -2,22 +2,63 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * WON API Controller v2.1.0 - Versão Corrigida e Segura
+ * WON API Controller v2.1.1 - Versão Profissional com CORS + Rate Limiting Avançado
  */
 class Won extends APP_Controller
 {
     private $config;
+    private $start_time;
     
     public function __construct()
     {
         parent::__construct();
         
+        // Marcar tempo de início para logs de performance
+        $this->start_time = microtime(true);
+        
         // Carregar configurações
         $this->load->config('won_api_tables');
         $this->config = $this->config->item('won_api_tables');
         
-        header('Content-Type: application/json');
+        // Setup CORS e headers
+        $this->setup_cors();
+        $this->setup_headers();
+    }
+
+    /**
+     * Configurar CORS para integrações front-end
+     */
+    private function setup_cors()
+    {
+        $cors_enabled = get_option('won_api_cors_enabled') ?: 'true';
+        
+        if ($cors_enabled === 'true') {
+            $allowed_origins = get_option('won_api_cors_origins') ?: '*';
+            
+            header('Access-Control-Allow-Origin: ' . $allowed_origins);
+            header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+            header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+            header('Access-Control-Allow-Credentials: true');
+            header('Access-Control-Max-Age: 86400'); // 24 horas
+            
+            // Responder a requests OPTIONS (preflight)
+            if ($this->input->method() === 'options') {
+                http_response_code(200);
+                exit;
+            }
+        }
+    }
+
+    /**
+     * Configurar headers padrão da API
+     */
+    private function setup_headers()
+    {
+        header('Content-Type: application/json; charset=utf-8');
         header('X-Robots-Tag: noindex');
+        header('X-WON-API-Version: 2.1.1');
+        header('X-Frame-Options: DENY');
+        header('X-Content-Type-Options: nosniff');
     }
 
     /**
@@ -25,6 +66,12 @@ class Won extends APP_Controller
      */
     private function json_response($success, $data = null, $message = '', $error_code = '', $status = 200)
     {
+        // Calcular tempo de resposta
+        $response_time = round((microtime(true) - $this->start_time) * 1000, 2);
+        
+        // Log da requisição
+        $this->log_api_request($success, $status, $response_time, $error_code);
+        
         $this->output
             ->set_status_header($status)
             ->set_content_type('application/json')
@@ -33,8 +80,38 @@ class Won extends APP_Controller
                 'data' => $data,
                 'message' => $message,
                 'error_code' => $error_code,
-                'timestamp' => time()
+                'timestamp' => time(),
+                'response_time_ms' => $response_time
             ]));
+    }
+
+    /**
+     * Log detalhado das requisições da API
+     */
+    private function log_api_request($success, $status, $response_time, $error_code = '')
+    {
+        $ip = $this->input->ip_address();
+        $endpoint = $this->uri->uri_string();
+        $method = $this->input->method();
+        $user_agent = $this->input->user_agent() ?: 'Unknown';
+        
+        // Log no banco de dados
+        $log_data = [
+            'endpoint' => $endpoint,
+            'method' => strtoupper($method),
+            'ip_address' => $ip,
+            'user_agent' => $user_agent,
+            'status' => $status,
+            'response_time' => $response_time,
+            'error_message' => $error_code ? $error_code : null,
+            'date' => date('Y-m-d H:i:s')
+        ];
+        
+        $this->db->insert(db_prefix() . 'won_api_logs', $log_data);
+        
+        // Log no arquivo para debug
+        $log_level = $success ? 'info' : 'error';
+        log_message($log_level, "[WON API v2.1.1] {$method} {$endpoint} - {$status} - {$response_time}ms - IP: {$ip}");
     }
 
     /**
@@ -59,49 +136,76 @@ class Won extends APP_Controller
     }
 
     /**
-     * Rate limiting robusto com database
+     * Rate limiting robusto com headers informativos
      */
     private function check_rate_limit()
     {
         $ip = $this->input->ip_address();
         $current_hour = floor(time() / 3600);
-        $rate_limit = get_option('won_api_rate_limit') ?: 100;
+        $rate_limit = (int)(get_option('won_api_rate_limit') ?: 100);
         
-        // Criar tabela de rate limit se não existir
+        // Criar tabela se não existir
         if (!$this->db->table_exists(db_prefix() . 'won_api_rate_limit')) {
             $this->create_rate_limit_table();
         }
+        
+        // Limpeza automática de dados antigos (> 48h)
+        $this->cleanup_old_rate_limits($current_hour - 48);
         
         // Verificar rate limit atual
         $this->db->where('ip_address', $ip);
         $this->db->where('hour_window', $current_hour);
         $rate_record = $this->db->get(db_prefix() . 'won_api_rate_limit')->row();
         
+        $remaining = $rate_limit;
+        $reset_time = ($current_hour + 1) * 3600;
+        
         if ($rate_record) {
+            $remaining = max(0, $rate_limit - $rate_record->request_count);
+            
             if ($rate_record->request_count >= $rate_limit) {
-                $this->json_response(false, null, 'Rate limit excedido', 'RATE_LIMIT_EXCEEDED', 429);
+                // Headers informativos mesmo quando bloqueado
+                header('X-RateLimit-Limit: ' . $rate_limit);
+                header('X-RateLimit-Remaining: 0');
+                header('X-RateLimit-Reset: ' . $reset_time);
+                
+                $this->json_response(false, null, 'Rate limit excedido. Tente novamente em ' . 
+                    round(($reset_time - time()) / 60) . ' minutos', 'RATE_LIMIT_EXCEEDED', 429);
                 return false;
             }
             
             // Incrementar contador
             $this->db->where('id', $rate_record->id);
             $this->db->set('request_count', 'request_count + 1', FALSE);
+            $this->db->set('last_request', 'NOW()', FALSE);
+            $this->db->set('user_agent', $this->input->user_agent() ?: 'Unknown');
             $this->db->update(db_prefix() . 'won_api_rate_limit');
+            
+            $remaining--;
         } else {
             // Primeiro request desta hora
             $this->db->insert(db_prefix() . 'won_api_rate_limit', [
                 'ip_address' => $ip,
                 'hour_window' => $current_hour,
                 'request_count' => 1,
+                'last_request' => date('Y-m-d H:i:s'),
+                'user_agent' => $this->input->user_agent() ?: 'Unknown',
                 'created_at' => date('Y-m-d H:i:s')
             ]);
+            
+            $remaining = $rate_limit - 1;
         }
+        
+        // Headers informativos de rate limiting
+        header('X-RateLimit-Limit: ' . $rate_limit);
+        header('X-RateLimit-Remaining: ' . $remaining);
+        header('X-RateLimit-Reset: ' . $reset_time);
         
         return true;
     }
 
     /**
-     * Criar tabela de rate limit
+     * Criar tabela de rate limit otimizada
      */
     private function create_rate_limit_table()
     {
@@ -110,12 +214,24 @@ class Won extends APP_Controller
             `ip_address` VARCHAR(45) NOT NULL,
             `hour_window` BIGINT NOT NULL,
             `request_count` INT DEFAULT 1,
+            `last_request` DATETIME NOT NULL,
+            `user_agent` TEXT NULL,
             `created_at` DATETIME NOT NULL,
             UNIQUE KEY `ip_hour` (`ip_address`, `hour_window`),
-            INDEX `hour_idx` (`hour_window`)
+            INDEX `hour_idx` (`hour_window`),
+            INDEX `last_request_idx` (`last_request`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
         
         $this->db->query($sql);
+    }
+
+    /**
+     * Limpeza automática de dados antigos
+     */
+    private function cleanup_old_rate_limits($cutoff_hour)
+    {
+        $this->db->where('hour_window <', $cutoff_hour);
+        $this->db->delete(db_prefix() . 'won_api_rate_limit');
     }
 
     /**
@@ -132,16 +248,46 @@ class Won extends APP_Controller
     }
 
     /**
-     * Validação de ID numérico
+     * Validação robusta de ID numérico
      */
     private function validate_id($id)
     {
-        if (!ctype_digit((string)$id)) {
-            $this->json_response(false, null, 'ID deve ser numérico', 'INVALID_ID', 400);
+        if (!ctype_digit((string)$id) || $id <= 0) {
+            $this->json_response(false, null, 'ID deve ser um número positivo', 'INVALID_ID', 400);
             return false;
         }
         
         return (int)$id;
+    }
+
+    /**
+     * Validação robusta de CPF/CNPJ
+     */
+    private function validate_cpf_cnpj($value)
+    {
+        // Limpar formatação
+        $value = preg_replace('/[^0-9]/', '', $value);
+        
+        // Verificar comprimento
+        if (!in_array(strlen($value), [11, 14])) {
+            return false;
+        }
+        
+        // Verificar se todos os dígitos são iguais
+        if (preg_match('/^(\d)\1+$/', $value)) {
+            return false;
+        }
+        
+        return $value;
+    }
+
+    /**
+     * Validação robusta de email
+     */
+    private function validate_email($email)
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) && 
+               preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email);
     }
 
     /**
@@ -165,7 +311,7 @@ class Won extends APP_Controller
             unset($data[$field]);
         }
         
-        // Validações específicas
+        // Validações específicas robustas
         if (isset($table_config['validation'])) {
             foreach ($table_config['validation'] as $field => $rules) {
                 if (!isset($data[$field]) && strpos($rules, 'required') === false) {
@@ -175,14 +321,24 @@ class Won extends APP_Controller
                 $value = $data[$field] ?? '';
                 
                 if (strpos($rules, 'valid_email') !== false && !empty($value)) {
-                    if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    if (!$this->validate_email($value)) {
                         $errors[] = "Email inválido no campo {$field}";
                     }
                 }
                 
                 if (strpos($rules, 'numeric') !== false && !empty($value)) {
-                    if (!is_numeric($value)) {
-                        $errors[] = "Campo {$field} deve ser numérico";
+                    if (!is_numeric($value) || $value < 0) {
+                        $errors[] = "Campo {$field} deve ser um número positivo";
+                    }
+                }
+                
+                // Validação de CPF/CNPJ
+                if ($field === 'vat' && !empty($value)) {
+                    $cleaned_vat = $this->validate_cpf_cnpj($value);
+                    if ($cleaned_vat === false) {
+                        $errors[] = "CPF/CNPJ inválido";
+                    } else {
+                        $data[$field] = $cleaned_vat;
                     }
                 }
             }
@@ -233,6 +389,54 @@ class Won extends APP_Controller
     }
 
     /**
+     * Endpoint de status da API (público)
+     */
+    public function status()
+    {
+        $status_data = [
+            'api_name' => 'WON API',
+            'version' => '2.1.1',
+            'status' => 'online',
+            'timestamp' => date('c'),
+            'server_time' => date('Y-m-d H:i:s'),
+            'endpoints' => [
+                'base_url' => site_url('won_api/won/api/'),
+                'authentication' => 'Header: Authorization',
+                'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
+                'format' => 'JSON'
+            ],
+            'rate_limiting' => [
+                'limit' => (int)(get_option('won_api_rate_limit') ?: 100),
+                'window' => '1 hour',
+                'headers' => ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset']
+            ],
+            'cors' => [
+                'enabled' => get_option('won_api_cors_enabled') === 'true',
+                'origins' => get_option('won_api_cors_origins') ?: '*'
+            ],
+            'tables' => array_keys($this->config),
+            'health' => [
+                'database' => $this->db->conn_id ? 'connected' : 'disconnected',
+                'logs_table' => $this->db->table_exists(db_prefix() . 'won_api_logs'),
+                'rate_limit_table' => $this->db->table_exists(db_prefix() . 'won_api_rate_limit')
+            ]
+        ];
+        
+        // Adicionar informações de debug se habilitado
+        if (get_option('won_api_debug_mode') === 'true') {
+            $status_data['debug'] = [
+                'php_version' => PHP_VERSION,
+                'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+                'request_method' => $this->input->method(),
+                'user_agent' => $this->input->user_agent(),
+                'ip_address' => $this->input->ip_address()
+            ];
+        }
+        
+        echo json_encode($status_data, JSON_PRETTY_PRINT);
+    }
+
+    /**
      * Endpoint principal da API
      */
     public function api($table_name = null, $id = null)
@@ -262,9 +466,9 @@ class Won extends APP_Controller
                     
                 case 'put':
                     $this->handle_put($table_config, $id);
-                break;
-
-            case 'delete':
+                    break;
+                    
+                case 'delete':
                     $this->handle_delete($table_config, $id);
                     break;
                     
@@ -272,7 +476,7 @@ class Won extends APP_Controller
                     $this->json_response(false, null, 'Método não suportado', 'METHOD_NOT_ALLOWED', 405);
             }
         } catch (Exception $e) {
-            log_message('error', '[WON API] Erro: ' . $e->getMessage());
+            log_message('error', '[WON API v2.1.1] Erro crítico: ' . $e->getMessage() . ' - Trace: ' . $e->getTraceAsString());
             $this->json_response(false, null, 'Erro interno do servidor', 'INTERNAL_ERROR', 500);
         }
     }
@@ -406,10 +610,16 @@ class Won extends APP_Controller
             return;
         }
         
-            $vat = $this->input->get('vat');
-
-        if (!$vat || !preg_match('/^\d{11}$|^\d{14}$/', $vat)) {
-            $this->json_response(false, null, 'CPF/CNPJ deve conter 11 ou 14 dígitos', 'INVALID_VAT', 400);
+        $vat = $this->input->get('vat');
+        
+        if (!$vat) {
+            $this->json_response(false, null, 'Parâmetro vat obrigatório', 'VAT_REQUIRED', 400);
+            return;
+        }
+        
+        $cleaned_vat = $this->validate_cpf_cnpj($vat);
+        if ($cleaned_vat === false) {
+            $this->json_response(false, null, 'CPF/CNPJ inválido', 'INVALID_VAT', 400);
             return;
         }
         
@@ -417,14 +627,14 @@ class Won extends APP_Controller
         $this->db->from('tblclients c');
         $this->db->join('tblprojects p', 'p.clientid = c.userid', 'left');
         $this->db->join('tblinvoices i', 'i.clientid = c.userid', 'left');
-        $this->db->where('c.vat', $vat);
+        $this->db->where('c.vat', $cleaned_vat);
         
         $result = $this->db->get()->result_array();
         
         if ($result) {
             $this->json_response(true, $result, 'Dados encontrados');
         } else {
-            $this->json_response(false, null, 'Nenhum dado encontrado', 'NOT_FOUND', 404);
+            $this->json_response(false, null, 'Nenhum dado encontrado para o CPF/CNPJ informado', 'NOT_FOUND', 404);
         }
     }
 }
