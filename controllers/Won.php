@@ -1,109 +1,226 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
+/**
+ * WON API Controller v2.1.0 - Versão Corrigida e Segura
+ */
 class Won extends APP_Controller
 {
-    private $allowed_tables = [
-        'tblclients', 'tblcontacts', 'tblleads', 'tblprojects', 
-        'tbltasks', 'tblinvoices', 'tblstaff', 'tbltickets'
-    ];
-
+    private $config;
+    
     public function __construct()
     {
         parent::__construct();
+        
+        // Carregar configurações
+        $this->load->config('won_api_tables');
+        $this->config = $this->config->item('won_api_tables');
+        
         header('Content-Type: application/json');
+        header('X-Robots-Tag: noindex');
     }
 
     /**
-     * Helper: Resposta JSON padronizada
+     * Resposta JSON padronizada e segura
      */
-    private function response($success, $data = null, $message = '', $error_code = '', $status = 200)
+    private function json_response($success, $data = null, $message = '', $error_code = '', $status = 200)
     {
-        $this->output->set_status_header($status);
-        $response = ['success' => $success];
-        
-        if ($success) {
-            if ($data !== null) $response['data'] = $data;
-            if ($message) $response['message'] = $message;
-        } else {
-            $response['error'] = $message;
-            if ($error_code) $response['error_code'] = $error_code;
-        }
-        
-        echo json_encode($response);
-        exit;
+        $this->output
+            ->set_status_header($status)
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'success' => $success,
+                'data' => $data,
+                'message' => $message,
+                'error_code' => $error_code,
+                'timestamp' => time()
+            ]));
     }
 
     /**
-     * Helper: Validar autenticação
+     * Validação de autenticação robusta
      */
-    private function validateAuth()
+    private function validate_authentication()
     {
         $token = $this->input->get_request_header('Authorization', TRUE);
-        $expected = get_option('won_api_token');
+        $expected_token = get_option('won_api_token');
 
         if (empty($token)) {
-            $this->response(false, null, 'Token não fornecido', 'AUTH_MISSING', 401);
+            $this->json_response(false, null, 'Token de autorização obrigatório', 'AUTH_MISSING', 401);
+            return false;
         }
         
-        if (empty($expected) || $token !== $expected) {
-            $this->response(false, null, 'Token inválido', 'AUTH_INVALID', 401);
+        if (empty($expected_token) || !hash_equals($expected_token, $token)) {
+            $this->json_response(false, null, 'Token inválido', 'AUTH_INVALID', 401);
+            return false;
         }
 
-        // Rate limiting
+        return $this->check_rate_limit();
+    }
+
+    /**
+     * Rate limiting robusto com database
+     */
+    private function check_rate_limit()
+    {
         $ip = $this->input->ip_address();
-        $rate_key = 'api_rate_' . md5($ip . $token);
-        $rate_count = $this->session->userdata($rate_key) ?: 0;
+        $current_hour = floor(time() / 3600);
+        $rate_limit = get_option('won_api_rate_limit') ?: 100;
         
-        if ($rate_count >= 100) {
-            $this->response(false, null, 'Limite de requisições excedido', 'RATE_LIMIT_EXCEEDED', 429);
+        // Criar tabela de rate limit se não existir
+        if (!$this->db->table_exists(db_prefix() . 'won_api_rate_limit')) {
+            $this->create_rate_limit_table();
         }
         
-        $this->session->set_userdata($rate_key, $rate_count + 1);
+        // Verificar rate limit atual
+        $this->db->where('ip_address', $ip);
+        $this->db->where('hour_window', $current_hour);
+        $rate_record = $this->db->get(db_prefix() . 'won_api_rate_limit')->row();
+        
+        if ($rate_record) {
+            if ($rate_record->request_count >= $rate_limit) {
+                $this->json_response(false, null, 'Rate limit excedido', 'RATE_LIMIT_EXCEEDED', 429);
+                return false;
+            }
+            
+            // Incrementar contador
+            $this->db->where('id', $rate_record->id);
+            $this->db->set('request_count', 'request_count + 1', FALSE);
+            $this->db->update(db_prefix() . 'won_api_rate_limit');
+        } else {
+            // Primeiro request desta hora
+            $this->db->insert(db_prefix() . 'won_api_rate_limit', [
+                'ip_address' => $ip,
+                'hour_window' => $current_hour,
+                'request_count' => 1,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+        
+        return true;
     }
 
     /**
-     * Helper: Validar tabela
+     * Criar tabela de rate limit
      */
-    private function validateTable($table)
+    private function create_rate_limit_table()
     {
-        $full_table = 'tbl' . $table;
-        if (!in_array($full_table, $this->allowed_tables)) {
-            $this->response(false, null, 'Tabela não permitida', 'INVALID_TABLE', 400);
-        }
-        return $full_table;
+        $sql = "CREATE TABLE IF NOT EXISTS `" . db_prefix() . "won_api_rate_limit` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `ip_address` VARCHAR(45) NOT NULL,
+            `hour_window` BIGINT NOT NULL,
+            `request_count` INT DEFAULT 1,
+            `created_at` DATETIME NOT NULL,
+            UNIQUE KEY `ip_hour` (`ip_address`, `hour_window`),
+            INDEX `hour_idx` (`hour_window`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+        
+        $this->db->query($sql);
     }
 
     /**
-     * Helper: Validar ID
+     * Validação segura de tabela
      */
-    private function validateId($id)
+    private function validate_table($table_name)
     {
-        if (!is_numeric($id)) {
-            $this->response(false, null, 'ID inválido', 'INVALID_ID', 400);
+        if (!isset($this->config[$table_name])) {
+            $this->json_response(false, null, 'Tabela não permitida', 'INVALID_TABLE', 400);
+            return false;
         }
+        
+        return $this->config[$table_name];
+    }
+
+    /**
+     * Validação de ID numérico
+     */
+    private function validate_id($id)
+    {
+        if (!ctype_digit((string)$id)) {
+            $this->json_response(false, null, 'ID deve ser numérico', 'INVALID_ID', 400);
+            return false;
+        }
+        
         return (int)$id;
     }
 
     /**
-     * Helper: Buscar com paginação
+     * Validação e sanitização de dados
      */
-    private function searchWithPagination($table, $where_clause, $values)
+    private function validate_data($data, $table_config, $is_update = false)
     {
-        $page = (int)$this->input->get('page') ?: 1;
-        $limit = (int)$this->input->get('limit') ?: 20;
+        $errors = [];
+        
+        // Verificar campos obrigatórios (apenas para criação)
+        if (!$is_update) {
+            foreach ($table_config['required_fields'] as $field) {
+                if (empty($data[$field])) {
+                    $errors[] = "Campo {$field} é obrigatório";
+                }
+            }
+        }
+        
+        // Remover campos readonly
+        foreach ($table_config['readonly_fields'] as $field) {
+            unset($data[$field]);
+        }
+        
+        // Validações específicas
+        if (isset($table_config['validation'])) {
+            foreach ($table_config['validation'] as $field => $rules) {
+                if (!isset($data[$field]) && strpos($rules, 'required') === false) {
+                    continue;
+                }
+                
+                $value = $data[$field] ?? '';
+                
+                if (strpos($rules, 'valid_email') !== false && !empty($value)) {
+                    if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $errors[] = "Email inválido no campo {$field}";
+                    }
+                }
+                
+                if (strpos($rules, 'numeric') !== false && !empty($value)) {
+                    if (!is_numeric($value)) {
+                        $errors[] = "Campo {$field} deve ser numérico";
+                    }
+                }
+            }
+        }
+        
+        if (!empty($errors)) {
+            $this->json_response(false, null, implode(', ', $errors), 'VALIDATION_ERROR', 422);
+            return false;
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Busca segura com paginação
+     */
+    private function secure_search($table_config, $filters = [])
+    {
+        $table_name = $table_config['table_name'];
+        $page = max(1, (int)$this->input->get('page') ?: 1);
+        $limit = min(100, max(1, (int)$this->input->get('limit') ?: 20));
         $offset = ($page - 1) * $limit;
-
+        
+        // Construir WHERE clause segura
+        $this->db->from($table_name);
+        
+        foreach ($filters as $field => $value) {
+            if (in_array($field, $table_config['searchable_fields'])) {
+                $this->db->like($field, $value);
+            }
+        }
+        
         // Contar total
-        $count_sql = "SELECT COUNT(*) as total FROM `$table`" . $where_clause;
-        $total = $this->db->query($count_sql, $values)->row()->total;
-
-        // Buscar dados
-        $sql = "SELECT * FROM `$table`" . $where_clause . " LIMIT ? OFFSET ?";
-        $values[] = $limit;
-        $values[] = $offset;
-        $data = $this->db->query($sql, $values)->result_array();
-
+        $total = $this->db->count_all_results('', false);
+        
+        // Buscar dados com paginação
+        $data = $this->db->limit($limit, $offset)->get()->result_array();
+        
         return [
             'data' => $data,
             'meta' => [
@@ -116,144 +233,189 @@ class Won extends APP_Controller
     }
 
     /**
-     * API RESTful Principal
+     * Endpoint principal da API
      */
-    public function api($table = null, $id = null)
+    public function api($table_name = null, $id = null)
     {
-        $this->validateAuth();
-        $table = $this->validateTable($table);
-        $method = $this->input->method();
-
-        switch ($method) {
-            case 'get':
-                if ($id) {
-                    $id = $this->validateId($id);
-                    $result = $this->db->query("SELECT * FROM `$table` WHERE id = ?", [$id])->row_array();
-                    if ($result) {
-                        $this->response(true, $result, 'Sucesso');
-                    } else {
-                        $this->response(false, null, 'Registro não encontrado', 'NOT_FOUND', 404);
-                    }
-                } else {
-                    // Busca com filtros
-                    $where = [];
-                    $values = [];
+        // Validar autenticação
+        if (!$this->validate_authentication()) {
+            return;
+        }
+        
+        // Validar tabela
+        $table_config = $this->validate_table($table_name);
+        if (!$table_config) {
+            return;
+        }
+        
+        $method = strtolower($this->input->method());
+        
+        try {
+            switch ($method) {
+                case 'get':
+                    $this->handle_get($table_config, $id);
+                    break;
                     
-                    if ($search = $this->input->get('search')) {
-                        $columns = $this->db->query("SHOW COLUMNS FROM `$table`")->result_array();
-                        foreach ($columns as $col) {
-                            if (preg_match('/^[a-zA-Z0-9_]+$/', $col['Field'])) {
-                                $where[] = "`{$col['Field']}` LIKE ?";
-                                $values[] = "%$search%";
-                            }
-                        }
-                        $where_clause = $where ? ' WHERE ' . implode(' OR ', $where) : '';
-                    } else {
-                        foreach ($this->input->get() as $col => $val) {
-                            if (preg_match('/^[a-zA-Z0-9_]+$/', $col) && !in_array($col, ['page', 'limit'])) {
-                                $where[] = "`$col` LIKE ?";
-                                $values[] = "%$val%";
-                            }
-                        }
-                        $where_clause = $where ? ' WHERE ' . implode(' AND ', $where) : '';
-                    }
-
-                    $result = $this->searchWithPagination($table, $where_clause, $values);
-                    echo json_encode([
-                        'success' => true,
-                        'data' => $result['data'],
-                        'meta' => $result['meta']
-                    ]);
-                    exit;
-                }
-                break;
-
-            case 'post':
-                $data = json_decode(file_get_contents('php://input'), true);
-                if (!$data) {
-                    $this->response(false, null, 'Dados inválidos', 'INVALID_DATA', 400);
-                }
-
-                // Validações específicas
-                if ($table === 'tblclients' && empty($data['company'])) {
-                    $this->response(false, null, 'Campo company obrigatório', 'MISSING_REQUIRED_FIELD', 422);
-                }
-
-                if (isset($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                    $this->response(false, null, 'Email inválido', 'INVALID_EMAIL_FORMAT', 422);
-                }
-
-                if ($this->db->insert($table, $data)) {
-                    $this->response(true, ['id' => $this->db->insert_id()], 'Criado com sucesso', '', 201);
-                } else {
-                    $this->response(false, null, 'Erro ao criar registro', 'SERVER_ERROR', 500);
-                }
-                break;
-
-            case 'put':
-                if (!$id) {
-                    $this->response(false, null, 'ID obrigatório', 'ID_REQUIRED', 400);
-                }
-                $id = $this->validateId($id);
-                $data = json_decode(file_get_contents('php://input'), true);
-                
-                if (!$data) {
-                    $this->response(false, null, 'Dados inválidos', 'INVALID_DATA', 400);
-                }
-
-                if (isset($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                    $this->response(false, null, 'Email inválido', 'INVALID_EMAIL_FORMAT', 422);
-                }
-
-                if ($this->db->where('id', $id)->update($table, $data)) {
-                    $this->response(true, null, 'Atualizado com sucesso');
-                } else {
-                    $this->response(false, null, 'Erro ao atualizar', 'SERVER_ERROR', 500);
-                }
-                break;
-
-            case 'delete':
-                if (!$id) {
-                    $this->response(false, null, 'ID obrigatório', 'ID_REQUIRED', 400);
-                }
-                $id = $this->validateId($id);
-                
-                if ($this->db->where('id', $id)->delete($table)) {
-                    $this->response(true, null, 'Removido com sucesso');
-                } else {
-                    $this->response(false, null, 'Erro ao remover', 'SERVER_ERROR', 500);
-                }
-                break;
-
-            default:
-                $this->response(false, null, 'Método não suportado', 'METHOD_NOT_ALLOWED', 405);
+                case 'post':
+                    $this->handle_post($table_config);
+                    break;
+                    
+                case 'put':
+                    $this->handle_put($table_config, $id);
+                    break;
+                    
+                case 'delete':
+                    $this->handle_delete($table_config, $id);
+                    break;
+                    
+                default:
+                    $this->json_response(false, null, 'Método não suportado', 'METHOD_NOT_ALLOWED', 405);
+            }
+        } catch (Exception $e) {
+            log_message('error', '[WON API] Erro: ' . $e->getMessage());
+            $this->json_response(false, null, 'Erro interno do servidor', 'INTERNAL_ERROR', 500);
         }
     }
 
     /**
-     * Busca por CNPJ/CPF
+     * Handler para GET requests
+     */
+    private function handle_get($table_config, $id)
+    {
+        if ($id) {
+            $id = $this->validate_id($id);
+            if ($id === false) return;
+            
+            $result = $this->db->get_where($table_config['table_name'], [
+                $table_config['primary_key'] => $id
+            ])->row_array();
+            
+            if ($result) {
+                $this->json_response(true, $result, 'Registro encontrado');
+            } else {
+                $this->json_response(false, null, 'Registro não encontrado', 'NOT_FOUND', 404);
+            }
+        } else {
+            // Buscar com filtros seguros
+            $filters = [];
+            foreach ($table_config['searchable_fields'] as $field) {
+                $value = $this->input->get($field);
+                if (!empty($value)) {
+                    $filters[$field] = $value;
+                }
+            }
+            
+            $result = $this->secure_search($table_config, $filters);
+            $this->json_response(true, $result['data'], 'Busca realizada', '', 200);
+        }
+    }
+
+    /**
+     * Handler para POST requests
+     */
+    private function handle_post($table_config)
+    {
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        
+        if (!$data) {
+            $this->json_response(false, null, 'JSON inválido', 'INVALID_JSON', 400);
+            return;
+        }
+        
+        $validated_data = $this->validate_data($data, $table_config);
+        if ($validated_data === false) return;
+        
+        if ($this->db->insert($table_config['table_name'], $validated_data)) {
+            $this->json_response(true, [
+                'id' => $this->db->insert_id()
+            ], 'Registro criado com sucesso', '', 201);
+        } else {
+            $this->json_response(false, null, 'Erro ao criar registro', 'CREATE_ERROR', 500);
+        }
+    }
+
+    /**
+     * Handler para PUT requests
+     */
+    private function handle_put($table_config, $id)
+    {
+        if (!$id) {
+            $this->json_response(false, null, 'ID obrigatório para atualização', 'ID_REQUIRED', 400);
+            return;
+        }
+        
+        $id = $this->validate_id($id);
+        if ($id === false) return;
+        
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        
+        if (!$data) {
+            $this->json_response(false, null, 'JSON inválido', 'INVALID_JSON', 400);
+            return;
+        }
+        
+        $validated_data = $this->validate_data($data, $table_config, true);
+        if ($validated_data === false) return;
+        
+        $this->db->where($table_config['primary_key'], $id);
+        if ($this->db->update($table_config['table_name'], $validated_data)) {
+            $this->json_response(true, null, 'Registro atualizado com sucesso');
+        } else {
+            $this->json_response(false, null, 'Erro ao atualizar registro', 'UPDATE_ERROR', 500);
+        }
+    }
+
+    /**
+     * Handler para DELETE requests
+     */
+    private function handle_delete($table_config, $id)
+    {
+        if (!$id) {
+            $this->json_response(false, null, 'ID obrigatório para exclusão', 'ID_REQUIRED', 400);
+            return;
+        }
+        
+        $id = $this->validate_id($id);
+        if ($id === false) return;
+        
+        $this->db->where($table_config['primary_key'], $id);
+        if ($this->db->delete($table_config['table_name'])) {
+            $this->json_response(true, null, 'Registro removido com sucesso');
+        } else {
+            $this->json_response(false, null, 'Erro ao remover registro', 'DELETE_ERROR', 500);
+        }
+    }
+
+    /**
+     * Endpoint para busca por CNPJ/CPF (melhorado)
      */
     public function join()
     {
-        $this->validateAuth();
+        if (!$this->validate_authentication()) {
+            return;
+        }
+        
         $vat = $this->input->get('vat');
         
         if (!$vat || !preg_match('/^\d{11}$|^\d{14}$/', $vat)) {
-            $this->response(false, null, 'CPF/CNPJ inválido', 'INVALID_VAT_FORMAT', 400);
+            $this->json_response(false, null, 'CPF/CNPJ deve conter 11 ou 14 dígitos', 'INVALID_VAT', 400);
+            return;
         }
-
-        $sql = "SELECT c.*, p.name as project_name, i.number as invoice_number 
-                FROM tblclients c 
-                LEFT JOIN tblprojects p ON p.clientid = c.userid 
-                LEFT JOIN tblinvoices i ON i.clientid = c.userid 
-                WHERE c.vat = ?";
         
-        $result = $this->db->query($sql, [$vat])->result_array();
+        $this->db->select('c.*, p.name as project_name, i.number as invoice_number');
+        $this->db->from('tblclients c');
+        $this->db->join('tblprojects p', 'p.clientid = c.userid', 'left');
+        $this->db->join('tblinvoices i', 'i.clientid = c.userid', 'left');
+        $this->db->where('c.vat', $vat);
+        
+        $result = $this->db->get()->result_array();
         
         if ($result) {
-            $this->response(true, $result, 'Dados encontrados');
+            $this->json_response(true, $result, 'Dados encontrados');
         } else {
-            $this->response(false, null, 'Nenhum dado encontrado', 'NOT_FOUND', 404);
+            $this->json_response(false, null, 'Nenhum dado encontrado', 'NOT_FOUND', 404);
         }
     }
 }

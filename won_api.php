@@ -2,31 +2,30 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
-Module Name: Won API
-Description: Este módulo fornece uma API para integração com o Perfex CRM.
-Author: Won Ecosystem
-Author URI: https://wonecosystem.com.br
+Module Name: WON API
+Description: API RESTful para integração completa com Perfex CRM
 Version: 2.1.0
 Requires at least: 2.9.2
+Author: Matheus Baiense
+Author URI: https://github.com/Matheusbaiense
 */
 
 define('WON_API_MODULE_NAME', 'won_api');
+define('WON_API_MODULE_VERSION', '2.1.0');
 
+// Registrar hooks
 hooks()->add_action('admin_init', 'won_api_module_init_menu_items');
 
-/**
- * Inicializa os itens do menu no painel administrativo
- */
 function won_api_module_init_menu_items()
 {
     $CI = &get_instance();
-
-    if (isset($CI->app_menu)) {
+    
+    if (has_permission('modules', '', 'view') || is_admin()) {
         $CI->app_menu->add_sidebar_menu_item('won_api', [
-            'name'     => 'Won API',
+            'name'     => 'WON API',
             'collapse' => true,
             'position' => 10,
-            'icon'     => 'fa fa-plug',
+            'icon'     => 'fa fa-code',
         ]);
 
         $CI->app_menu->add_sidebar_children_item('won_api', [
@@ -37,7 +36,7 @@ function won_api_module_init_menu_items()
         ]);
 
         $CI->app_menu->add_sidebar_children_item('won_api', [
-            'slug'     => 'won_api_documentation',
+            'slug'     => 'won_api_docs', 
             'name'     => 'Documentação',
             'href'     => admin_url('won_api/documentation'),
             'position' => 10,
@@ -49,36 +48,25 @@ function won_api_module_init_menu_items()
             'href'     => admin_url('won_api/logs'),
             'position' => 15,
         ]);
-    } else {
-        log_message('error', '[Won API] Não foi possível carregar o app_menu.');
     }
 }
 
-/**
- * Hook de ativação do módulo
- */
+// Hooks de ativação/desinstalação
 register_activation_hook(WON_API_MODULE_NAME, 'won_api_module_activation_hook');
 function won_api_module_activation_hook()
 {
     $CI = &get_instance();
-    $installPath = __DIR__ . '/install.php';
-    if (file_exists($installPath)) {
-        require_once($installPath);
-    } else {
-        log_message('error', '[Won API] Arquivo install.php não encontrado.');
+    $install_path = __DIR__ . '/install.php';
+    if (file_exists($install_path)) {
+        require_once($install_path);
     }
 }
 
-/**
- * Hook de desinstalação do módulo
- */
-register_uninstall_hook(WON_API_MODULE_NAME, 'won_api_uninstall_hook');
-function won_api_uninstall_hook()
+register_uninstall_hook(WON_API_MODULE_NAME, 'won_api_module_uninstall_hook');
+function won_api_module_uninstall_hook()
 {
-    $uninstallPath = __DIR__ . '/uninstall.php';
-    if (file_exists($uninstallPath)) {
-        require_once($uninstallPath);
-    } else {
-        log_message('error', '[Won API] Arquivo uninstall.php não encontrado.');
+    $uninstall_path = __DIR__ . '/uninstall.php';
+    if (file_exists($uninstall_path)) {
+        require_once($uninstall_path);
     }
 }

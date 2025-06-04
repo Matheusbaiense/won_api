@@ -8,7 +8,7 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-8">
-                                <h4 class="no-margin"><?php echo $title; ?></h4>
+                        <h4 class="no-margin"><?php echo $title; ?></h4>
                             </div>
                             <div class="col-md-4 text-right">
                                 <a href="<?php echo admin_url('won_api/documentation'); ?>" class="btn btn-info btn-sm">
@@ -56,7 +56,7 @@
                                     <tr><th>Rate Limit:</th><td>100 requisições/hora</td></tr>
                                     <tr><th>Autenticação:</th><td>Header: <code>Authorization: TOKEN</code></td></tr>
                                     <tr><th>Status:</th><td><span class="label label-success">Ativo</span></td></tr>
-                                </table>
+                        </table>
                             </div>
                             <div class="col-md-6">
                                 <h5><i class="fa fa-cogs"></i> Ações Rápidas</h5>
