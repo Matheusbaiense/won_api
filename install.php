@@ -25,11 +25,22 @@ try {
     }
     
     // Registrar/atualizar módulo
-    $CI->db->replace($modules_table, [
-        'module_name' => 'won_api',
-        'installed_version' => '2.1.0',
-        'active' => 1
-    ]);
+    $CI->db->where('module_name', 'won_api');
+    $existing = $CI->db->get($modules_table)->row();
+
+    if ($existing) {
+        $CI->db->where('module_name', 'won_api');
+        $CI->db->update($modules_table, [
+            'installed_version' => '2.1.0',
+            'active' => 1
+        ]);
+    } else {
+        $CI->db->insert($modules_table, [
+            'module_name' => 'won_api',
+            'installed_version' => '2.1.0',
+            'active' => 1
+        ]);
+    }
     
     // 2. Criar tabela de logs
     $logs_table = db_prefix() . 'won_api_logs';
@@ -49,7 +60,22 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
     
-    // 3. Configurar opções essenciais
+    // 3. Criar tabela de rate limiting
+    $rate_limit_table = db_prefix() . 'won_api_rate_limit';
+
+    if (!$CI->db->table_exists($rate_limit_table)) {
+        $CI->db->query("CREATE TABLE `{$rate_limit_table}` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `ip_address` VARCHAR(45) NOT NULL,
+            `hour_window` BIGINT NOT NULL,
+            `request_count` INT DEFAULT 1,
+            `created_at` DATETIME NOT NULL,
+            UNIQUE KEY `ip_hour` (`ip_address`, `hour_window`),
+            INDEX `hour_idx` (`hour_window`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+    
+    // 4. Configurar opções essenciais
     $options = [
         'won_api_token' => bin2hex(random_bytes(32)),
         'won_api_rate_limit' => '100',

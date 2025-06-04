@@ -262,9 +262,9 @@ class Won extends APP_Controller
                     
                 case 'put':
                     $this->handle_put($table_config, $id);
-                    break;
-                    
-                case 'delete':
+                break;
+
+            case 'delete':
                     $this->handle_delete($table_config, $id);
                     break;
                     
@@ -306,7 +306,16 @@ class Won extends APP_Controller
             }
             
             $result = $this->secure_search($table_config, $filters);
-            $this->json_response(true, $result['data'], 'Busca realizada', '', 200);
+            $this->output
+                ->set_status_header(200)
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'success' => true,
+                    'data' => $result['data'],
+                    'meta' => $result['meta'],
+                    'timestamp' => time()
+                ]));
+            return;
         }
     }
 
@@ -362,7 +371,7 @@ class Won extends APP_Controller
         $this->db->where($table_config['primary_key'], $id);
         if ($this->db->update($table_config['table_name'], $validated_data)) {
             $this->json_response(true, null, 'Registro atualizado com sucesso');
-        } else {
+                } else {
             $this->json_response(false, null, 'Erro ao atualizar registro', 'UPDATE_ERROR', 500);
         }
     }
@@ -397,8 +406,8 @@ class Won extends APP_Controller
             return;
         }
         
-        $vat = $this->input->get('vat');
-        
+            $vat = $this->input->get('vat');
+
         if (!$vat || !preg_match('/^\d{11}$|^\d{14}$/', $vat)) {
             $this->json_response(false, null, 'CPF/CNPJ deve conter 11 ou 14 dígitos', 'INVALID_VAT', 400);
             return;

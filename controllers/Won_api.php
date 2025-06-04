@@ -59,11 +59,14 @@ class Won_api extends AdminController
      */
     public function documentation()
     {
+        $this->load->config('won_api_tables');
+        $tables_config = $this->config->item('won_api_tables');
+        
         $data = [
             'title' => 'Documentação WON API',
             'token' => $this->configs['token'],
             'base_url' => site_url('won_api/won/api/'),
-            'allowed_tables' => explode(',', get_option('won_api_whitelist_tables') ?: 'clients,projects,tasks')
+            'allowed_tables' => array_keys($tables_config)
         ];
         $this->load->view('won_api/api_documentation', $data);
     }
