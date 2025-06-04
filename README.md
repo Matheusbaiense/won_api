@@ -1,13 +1,13 @@
-# 🚀 WON API v2.1.1 - API RESTful Profissional para Perfex CRM
+# 🚀 WON API v2.1.2 - API RESTful Profissional para Perfex CRM
 
-[![Versão](https://img.shields.io/badge/versão-2.1.1-brightgreen.svg)](https://github.com/Matheusbaiense/won_api)
+[![Versão](https://img.shields.io/badge/versão-2.1.2-brightgreen.svg)](https://github.com/Matheusbaiense/won_api)
 [![PHP](https://img.shields.io/badge/PHP-7.4+-blue.svg)](https://php.net)
 [![Perfex CRM](https://img.shields.io/badge/Perfex%20CRM-2.9.2+-orange.svg)](https://perfexcrm.com)
-[![Licença](https://img.shields.io/badge/licença-MIT-blue.svg)](LICENSE)
+[![Licença](https://img.shields.io/badge/licença-MIT-yellow.svg)](LICENSE)
 
 > **API RESTful completa e segura para integração com Perfex CRM, incluindo CORS, rate limiting avançado, validações robustas e monitoramento profissional.**
 
-## 🌟 **Novidades v2.1.1 (Profissional)**
+## 🌟 **Novidades v2.1.2 (Profissional)**
 
 ### 🔥 **Funcionalidades Principais**
 - ✅ **CORS Completo** - Integração front-end e SPAs
@@ -17,6 +17,12 @@
 - ✅ **Endpoint de Status** - Monitoramento e health check
 - ✅ **X-API-TOKEN Padrão** - Compatibilidade total com Perfex CRM
 - ✅ **Atualização Automática** - Script com backup e rollback
+- 🔒 **Sistema de validação específico** por entidade
+- 💬 **Mensagens de erro multilíngues** com sugestões de correção
+- ⚡ **Endpoints especializados** para operações complexas
+- 📊 **Metadados de paginação** aprimorados
+- 🌐 **Compatibilidade total** com Node Community
+- 🎨 **Interface administrativa** moderna e responsiva
 
 ### 📊 **Endpoints Disponíveis**
 
@@ -64,7 +70,7 @@ Access-Control-Allow-Headers: X-API-TOKEN, Content-Type, Accept, X-Requested-Wit
 
 ### 🛡️ **Headers de Segurança**
 ```http
-X-WON-API-Version: 2.1.1
+X-WON-API-Version: 2.1.2
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 ```
@@ -76,7 +82,7 @@ X-Content-Type-Options: nosniff
 X-API-TOKEN: seu_token_aqui
 ```
 
-**IMPORTANTE:** O WON API v2.1.1 mantém o padrão **X-API-TOKEN** do Perfex CRM para máxima compatibilidade com o ecossistema Perfex.
+**IMPORTANTE:** O WON API v2.1.2 mantém o padrão **X-API-TOKEN** do Perfex CRM para máxima compatibilidade com o ecossistema Perfex.
 
 ### 📋 **Como Configurar**
 
@@ -105,7 +111,7 @@ curl -X GET "https://seusite.com/won_api/won/status"
 **Resposta:**
 ```json
 {
-  "api_version": "2.1.1",
+  "api_version": "2.1.2",
   "status": "online",
   "timestamp": 1703123456,
   "authentication": "X-API-TOKEN",
@@ -145,7 +151,7 @@ curl -X GET "https://seusite.com/won_api/won/api/clients?page=1&limit=10" \
     "has_prev_page": false
   },
   "timestamp": 1703123456,
-  "version": "2.1.1"
+  "version": "2.1.2"
 }
 ```
 

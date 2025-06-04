@@ -55,22 +55,29 @@
                                 <h5>🔧 Exemplo de Uso</h5>
                                 <pre style="font-size:11px;background:#f8f8f8;padding:10px;border-radius:3px;">
 # Listar clientes
-curl -X GET "<?php echo $base_url; ?>clients" \
-     -H "Authorization: <?php echo substr($token, 0, 16); ?>..."
+curl -X GET "<?php echo $base_url; ?>api/clients" \
+     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."
 
 # Criar cliente
-curl -X POST "<?php echo $base_url; ?>clients" \
-     -H "Authorization: <?php echo substr($token, 0, 16); ?>..." \
+curl -X POST "<?php echo $base_url; ?>api/clients" \
+     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..." \
      -H "Content-Type: application/json" \
      -d '{"company":"Empresa LTDA"}'
 
 # Obter cliente específico
-curl -X GET "<?php echo $base_url; ?>clients/1" \
-     -H "Authorization: <?php echo substr($token, 0, 16); ?>..."</pre>
+curl -X GET "<?php echo $base_url; ?>api/clients/1" \
+     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."
+
+# Endpoints especializados v2.1.2
+curl -X POST "<?php echo $base_url; ?>estimate/convert/123" \
+     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."
+
+curl -X GET "<?php echo $base_url; ?>dashboard/stats" \
+     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."</pre>
                                 
                                 <h5>📋 Headers Obrigatórios</h5>
                                 <table class="table table-condensed">
-                                    <tr><th>Authorization:</th><td>Seu token da API</td></tr>
+                                    <tr><th>X-API-TOKEN:</th><td>Seu token da API</td></tr>
                                     <tr><th>Content-Type:</th><td>application/json (POST/PUT)</td></tr>
                                 </table>
                                 

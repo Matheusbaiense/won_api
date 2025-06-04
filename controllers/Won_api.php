@@ -2,103 +2,138 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * Controlador Administrativo WON API v2.1.0 - Ultra Simplificado
+ * WON API Admin Controller v2.1.1 - Easy Install Compatible
+ * Interface administrativa simplificada
  */
 class Won_api extends AdminController
 {
-    private $configs;
-    
     public function __construct()
     {
         parent::__construct();
-        $this->_load_configs();
+        $this->load->database();
     }
-    
+
     /**
-     * Carrega configurações uma única vez
-     */
-    private function _load_configs()
-    {
-        $this->configs = [
-            'token' => get_option('won_api_token'),
-            'rate_limit' => get_option('won_api_rate_limit') ?: '100'
-        ];
-    }
-    
-    /**
-     * Página principal de configurações
+     * Página de configurações
      */
     public function configuracoes()
     {
-        $data = [
-            'title' => 'WON API - Configurações',
-            'configs' => [
-                'id' => 1,
-                'token' => $this->configs['token'] ?: 'Token não configurado'
-            ]
-        ];
-        $this->load->view('won_api/configuracoes', $data);
+        if (!has_permission('modules', '', 'view') && !is_admin()) {
+            access_denied('WON API');
+        }
+
+        $data['title'] = 'WON API - Configurações';
+        $this->load->view('configuracoes', $data);
     }
-    
+
     /**
      * Regenerar token da API
      */
     public function regenerate_token()
     {
-        if ($this->input->post()) {
-            $new_token = bin2hex(random_bytes(32));
-            update_option('won_api_token', $new_token);
-            set_alert('success', 'Token regenerado com sucesso!');
-            log_message('info', '[Won API] Token regenerado por usuário: ' . get_staff_user_id());
+        if (!is_admin()) {
+            show_404();
         }
-        redirect(admin_url('won_api/configuracoes'));
+
+        if ($this->input->is_ajax_request() && $this->input->method() === 'post') {
+            try {
+                $new_token = bin2hex(random_bytes(32));
+                
+                $this->db->where('name', 'won_api_token');
+                $this->db->update(db_prefix() . 'options', ['value' => $new_token]);
+                
+                if ($this->db->affected_rows() > 0) {
+                    echo json_encode([
+                        'success' => true,
+                        'new_token' => $new_token,
+                        'message' => 'Token regenerado com sucesso'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Erro ao atualizar token'
+                    ]);
+                }
+            } catch (Exception $e) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Erro interno: ' . $e->getMessage()
+                ]);
+            }
+        } else {
+            show_404();
+        }
     }
-    
+
     /**
      * Documentação da API
      */
     public function documentation()
     {
-        $this->load->config('won_api_tables');
-        $tables_config = $this->config->item('won_api_tables');
-        
-        $data = [
-            'title' => 'Documentação WON API',
-            'token' => $this->configs['token'],
-            'base_url' => site_url('won_api/won/api/'),
-            'allowed_tables' => array_keys($tables_config)
+        if (!has_permission('modules', '', 'view') && !is_admin()) {
+            access_denied('WON API');
+        }
+
+        $data['title'] = 'WON API - Documentação';
+        $data['token'] = get_option('won_api_token');
+        $data['base_url'] = base_url('won_api/won/');
+        $data['allowed_tables'] = [
+            'clients', 'projects', 'tasks', 'invoices', 
+            'estimates', 'leads', 'staff'
         ];
-        $this->load->view('won_api/api_documentation', $data);
+        
+        $this->load->view('api_documentation', $data);
     }
-    
+
     /**
-     * Exibir logs da API
+     * Logs da API (simplificado)
      */
     public function logs()
     {
-        $this->load->library('pagination');
-        
-        $config = [
-            'base_url' => admin_url('won_api/logs'),
-            'total_rows' => $this->db->count_all(db_prefix() . 'won_api_logs'),
-            'per_page' => 50,
-            'uri_segment' => 4
-        ];
-        
-        $this->pagination->initialize($config);
-        
-        $offset = $this->uri->segment(4) ?: 0;
-        $logs = $this->db
-            ->order_by('date', 'DESC')
-            ->limit($config['per_page'], $offset)
-            ->get(db_prefix() . 'won_api_logs')
-            ->result_array();
-        
-        $data = [
-            'title' => 'Logs WON API',
-            'logs' => $logs,
-            'pagination' => $this->pagination->create_links()
-        ];
-        $this->load->view('won_api/logs', $data);
+        if (!has_permission('modules', '', 'view') && !is_admin()) {
+            access_denied('WON API');
+        }
+
+        $data['title'] = 'WON API - Logs';
+        $data['logs'] = $this->get_recent_logs();
+        $this->load->view('logs', $data);
+    }
+
+    /**
+     * Obter logs recentes
+     */
+    private function get_recent_logs()
+    {
+        // Logs básicos do CodeIgniter
+        $log_file = APPPATH . 'logs/log-' . date('Y-m-d') . '.php';
+        $logs = [];
+
+        if (file_exists($log_file)) {
+            $content = file_get_contents($log_file);
+            $lines = explode("\n", $content);
+            
+            foreach (array_reverse(array_slice($lines, -50)) as $line) {
+                if (strpos($line, '[WON API]') !== false) {
+                    $logs[] = [
+                        'timestamp' => substr($line, 0, 19),
+                        'level' => $this->extract_log_level($line),
+                        'message' => trim(substr($line, strpos($line, '[WON API]')))
+                    ];
+                }
+            }
+        }
+
+        return array_slice($logs, 0, 20); // Últimos 20 logs
+    }
+
+    /**
+     * Extrair nível do log
+     */
+    private function extract_log_level($line)
+    {
+        if (strpos($line, 'ERROR') !== false) return 'error';
+        if (strpos($line, 'WARNING') !== false) return 'warning';
+        if (strpos($line, 'INFO') !== false) return 'info';
+        return 'debug';
     }
 }
