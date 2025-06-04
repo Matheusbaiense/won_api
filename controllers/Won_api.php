@@ -2,87 +2,51 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * WON API Admin Controller v2.1.1 - Easy Install Compatible
- * Interface administrativa simplificada
+ * WON API Administrative Controller v2.1.1 - SIMPLIFICADO
  */
 class Won_api extends AdminController
 {
     public function __construct()
     {
         parent::__construct();
-        $this->load->database();
     }
 
-    /**
-     * Página de configurações
-     */
-    public function configuracoes()
+    public function settings()
     {
-        if (!has_permission('modules', '', 'view') && !is_admin()) {
+        if (!is_admin()) {
             access_denied('WON API');
         }
 
         $data['title'] = 'WON API - Configurações';
-        $this->load->view('configuracoes', $data);
+        $data['token'] = get_option('won_api_token');
+        $this->load->view('settings', $data);
     }
 
-    /**
-     * Regenerar token da API
-     */
-    public function regenerate_token()
+    public function docs()
     {
         if (!is_admin()) {
-            show_404();
-        }
-
-        if ($this->input->is_ajax_request() && $this->input->method() === 'post') {
-            try {
-                $new_token = bin2hex(random_bytes(32));
-                
-                $this->db->where('name', 'won_api_token');
-                $this->db->update(db_prefix() . 'options', ['value' => $new_token]);
-                
-                if ($this->db->affected_rows() > 0) {
-                    echo json_encode([
-                        'success' => true,
-                        'new_token' => $new_token,
-                        'message' => 'Token regenerado com sucesso'
-                    ]);
-                } else {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Erro ao atualizar token'
-                    ]);
-                }
-            } catch (Exception $e) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Erro interno: ' . $e->getMessage()
-                ]);
-            }
-        } else {
-            show_404();
-        }
-    }
-
-    /**
-     * Documentação da API
-     */
-    public function documentation()
-    {
-        if (!has_permission('modules', '', 'view') && !is_admin()) {
             access_denied('WON API');
         }
 
         $data['title'] = 'WON API - Documentação';
         $data['token'] = get_option('won_api_token');
         $data['base_url'] = base_url('won_api/won/');
-        $data['allowed_tables'] = [
-            'clients', 'projects', 'tasks', 'invoices', 
-            'estimates', 'leads', 'staff'
-        ];
-        
-        $this->load->view('api_documentation', $data);
+        $this->load->view('docs', $data);
+    }
+
+    public function regenerate_token()
+    {
+        if (!is_admin() || !$this->input->is_ajax_request()) {
+            show_404();
+        }
+
+        $new_token = bin2hex(random_bytes(32));
+        update_option('won_api_token', $new_token);
+
+        echo json_encode([
+            'success' => true,
+            'token' => $new_token
+        ]);
     }
 
     /**

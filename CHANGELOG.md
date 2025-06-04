@@ -1,72 +1,97 @@
 # 📝 CHANGELOG - WON API
 
-## [2.1.1] - 2024-12-20 🔧 **CORREÇÃO CRÍTICA: Instalação Easy Fix**
+## v2.1.1 - Versão Limpa e Funcional (2024-01-XX)
 
-### 🚨 **PROBLEMA RESOLVIDO**
-- **Instalação complexa** causando conflitos com sistema de módulos Perfex CRM
-- **Over-engineering** na ativação/desinstalação
-- **Dependências desnecessárias** durante instalação
+### 🎯 **CORREÇÃO COMPLETA DA ARQUITETURA**
 
-### ✅ **SOLUÇÕES IMPLEMENTADAS**
+Esta versão foi criada para resolver problemas críticos de conflitos de versões e arquitetura fragmentada identificados na v2.1.2.
 
-#### 🎯 **Instalação Ultra-Simples**
-- **Arquivo principal simplificado** - `won_api.php` com hooks básicos
-- **Install.php minimalista** - apenas token + configurações essenciais
-- **Ativação direta** - sem scripts complexos ou verificações excessivas
-- **100% compatível** com método Easy do Perfex CRM
+### ✅ **Problemas Resolvidos**
 
-#### 🛡️ **Robustez Funcional Mantida**
-- **Controller Won.php** mantém toda funcionalidade da v2.1.0
-- **Rate limiting** completo com lazy table creation
-- **CORS configurável** e funcional
-- **Validações robustas** CPF/CNPJ, email, IDs
-- **Autenticação X-API-TOKEN** padrão Perfex CRM
+#### 1. **Conflito Massivo de Versões - CORRIGIDO**
+- ❌ **ANTES:** Arquivos misturando v2.1.0, v2.1.1 e v2.1.2
+- ✅ **AGORA:** Versão única 2.1.1 em todos os arquivos
 
-#### 🎨 **Interface Melhorada**
-- **Configurações.php** redesenhada - UI moderna e funcional
-- **Botão copiar token** integrado
-- **Regeneração AJAX** de token
-- **Exemplos de uso** práticos
-- **Links diretos** para documentação e status
+#### 2. **Bibliotecas Órfãs - REMOVIDAS**
+- ❌ **REMOVIDO:** `Won_error_handler.php` (não utilizada)
+- ❌ **REMOVIDO:** `Won_validator.php` (não utilizada)  
+- ❌ **REMOVIDO:** `Won_operations.php` (não utilizada)
+- ✅ **RESULTADO:** Arquitetura limpa sem dependências órfãs
 
-#### 📊 **Logs Simplificados**
-- **Logs.php** baseado em logs nativos do CodeIgniter
-- **Últimas 20 entradas** WON API
-- **Categorização** por nível (error, warning, info, debug)
-- **Interface limpa** e responsiva
+#### 3. **Configurações Órfãs - REMOVIDAS**
+- ❌ **REMOVIDO:** `config/won_api_config.php` (ignorada pelo controller)
+- ❌ **REMOVIDO:** `config/won_api_tables.php` (ignorada pelo controller)
+- ✅ **RESULTADO:** Configurações hardcoded no controller (sem dependências)
 
-### 🔄 **Comparação v2.1.0 → v2.1.1**
+#### 4. **Rotas para Endpoints Inexistentes - REMOVIDAS**
+- ❌ **REMOVIDO:** Rotas para `estimate/convert`, `invoice/send`, `dashboard/stats`
+- ✅ **MANTIDO:** Apenas rotas para endpoints implementados
 
-| Aspecto | v2.1.0 | v2.1.1 |
-|---------|--------|--------|
-| **Instalação** | Complexa (falhas) | Ultra-simples ✅ |
-| **Funcionalidades** | Robustas | Mantidas 100% ✅ |
-| **Interface** | Básica | Moderna ✅ |
-| **Compatibilidade** | Problemas | Perfex Easy ✅ |
-| **Manutenção** | Difícil | Simples ✅ |
+#### 5. **Instalação Ultra-Simplificada**
+- ❌ **ANTES:** Tentava criar tabelas complexas
+- ✅ **AGORA:** Apenas token + configurações básicas via `add_option()`
 
-### 📦 **Arquivos Modificados**
+#### 6. **Controller Defensivo**
+- ❌ **ANTES:** Dependências circulares e configs inexistentes
+- ✅ **AGORA:** Hardcoded, sem dependências externas
+
+#### 7. **Testes Órfãos - REMOVIDOS**
+- ❌ **REMOVIDO:** `api_test_v2_1_2.php` (testava endpoints inexistentes)
+- ✅ **RESULTADO:** Sem testes para funcionalidades não implementadas
+
+#### 8. **Arquivos de Versões Conflitantes - REMOVIDOS**
+- ❌ **REMOVIDO:** `update_v2_1_1.php`, `install_manual.php`, `verify_install.php`
+- ✅ **RESULTADO:** Apenas arquivos essenciais
+
+### 🚀 **Funcionalidades Mantidas**
+
+- ✅ **6 Tabelas:** clients, projects, tasks, invoices, leads, staff
+- ✅ **CRUD Completo:** GET, POST, PUT, DELETE
+- ✅ **Autenticação:** X-API-TOKEN (padrão Perfex CRM)
+- ✅ **CORS:** Habilitado para máxima compatibilidade
+- ✅ **Endpoints Especiais:** `/status` (público), `/join` (busca CPF/CNPJ)
+- ✅ **Paginação:** `?page=1&limit=20`
+- ✅ **Busca:** `?search=termo`
+- ✅ **Interface Admin:** Configurações e documentação
+- ✅ **Easy Install:** 100% compatível
+- ✅ **Logs:** Sistema básico do CodeIgniter
+
+### 📁 **Estrutura Limpa**
+
 ```
 won_api/
-├── won_api.php          ✅ REESCRITO - Instalação simples
-├── install.php          ✅ SIMPLIFICADO - Apenas essencial  
+├── won_api.php              # Arquivo principal v2.1.1
+├── install.php              # Instalação ultra-simples
 ├── controllers/
-│   ├── Won.php          ✅ OTIMIZADO - Robustez mantida
-│   └── Won_api.php      ✅ MELHORADO - Interface AJAX
+│   ├── Won.php              # Controller principal limpo
+│   └── Won_api.php          # Controller admin simplificado  
 ├── views/
-│   ├── configuracoes.php ✅ REDESENHADA - UI moderna
-│   └── logs.php         ✅ CRIADA - Logs simplificados
-└── README.md            ✅ ATUALIZADO - v2.1.1
+│   └── configuracoes.php    # Interface simplificada
+├── config/
+│   └── routes.php           # Apenas rotas necessárias
+├── README.md                # Documentação atualizada
+└── CHANGELOG.md             # Este arquivo
 ```
 
 ### 🎯 **Resultado Final**
-- ✅ **Instalação 100% funcional** via método Easy
-- ✅ **Todas as funcionalidades robustas** mantidas  
-- ✅ **Interface administrativa** profissional
-- ✅ **Zero conflitos** com sistema Perfex CRM
-- ✅ **Upgrade suave** da v2.1.0
+
+A **WON API v2.1.1** é uma versão **LIMPA, FUNCIONAL e SEM CONFLITOS** que resolve todos os problemas de arquitetura fragmentada da v2.1.2.
+
+- ✅ **100% Easy Install** compatível
+- ✅ **Sem dependências órfãs**
+- ✅ **Versão única consistente**
+- ✅ **Arquitetura simplificada**
+- ✅ **Todas as funcionalidades essenciais**
 
 ---
+
+## v2.1.0 - Primeira Versão (2024-01-XX)
+
+### ✅ **Funcionalidades Iniciais**
+- Operações CRUD básicas
+- Autenticação por token
+- Suporte a múltiplas tabelas
+- Interface administrativa básica
 
 ## [2.1.0] - 2024-12-19 🚀 **VERSÃO ROBUSTA PROFISSIONAL**
 
