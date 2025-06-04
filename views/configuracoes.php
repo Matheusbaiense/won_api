@@ -8,7 +8,7 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-8">
-                        <h4 class="no-margin"><?php echo $title; ?></h4>
+                                <h4 class="no-margin"><?php echo $title; ?></h4>
                             </div>
                             <div class="col-md-4 text-right">
                                 <a href="<?php echo admin_url('won_api/documentation'); ?>" class="btn btn-info btn-sm">

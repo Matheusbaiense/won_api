@@ -371,7 +371,7 @@ class Won extends APP_Controller
         $this->db->where($table_config['primary_key'], $id);
         if ($this->db->update($table_config['table_name'], $validated_data)) {
             $this->json_response(true, null, 'Registro atualizado com sucesso');
-                } else {
+        } else {
             $this->json_response(false, null, 'Erro ao atualizar registro', 'UPDATE_ERROR', 500);
         }
     }
