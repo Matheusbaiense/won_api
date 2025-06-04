@@ -2,8 +2,7 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * Controlador Administrativo WON API - Versão Otimizada
- * Gerencia configurações e documentação do módulo
+ * Controlador Administrativo WON API v2.1.0 - Ultra Simplificado
  */
 class Won_api extends AdminController
 {
@@ -12,7 +11,6 @@ class Won_api extends AdminController
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('won_api_model');
         $this->_load_configs();
     }
     
@@ -23,8 +21,7 @@ class Won_api extends AdminController
     {
         $this->configs = [
             'token' => get_option('won_api_token'),
-            'rate_limit' => get_option('won_api_rate_limit') ?: '100',
-            'log_level' => get_option('won_api_log_level') ?: 'basic'
+            'rate_limit' => get_option('won_api_rate_limit') ?: '100'
         ];
     }
     
@@ -69,40 +66,6 @@ class Won_api extends AdminController
             'allowed_tables' => explode(',', get_option('won_api_whitelist_tables') ?: 'clients,projects,tasks')
         ];
         $this->load->view('won_api/api_documentation', $data);
-    }
-    
-    /**
-     * Instruções detalhadas
-     */
-    public function instructions()
-    {
-        $data = [
-            'title' => 'Instruções WON API',
-            'version' => '2.1.0'
-        ];
-        $this->load->view('won_api/instructions', $data);
-    }
-    
-    /**
-     * Executar diagnóstico do sistema
-     */
-    public function diagnostic()
-    {
-        if (file_exists(FCPATH . 'modules/won_api/diagnostic.php')) {
-            include FCPATH . 'modules/won_api/diagnostic.php';
-            $diagnostic = new Won_Api_Diagnostic();
-            $results = $diagnostic->run_all_checks();
-            
-            $data = [
-                'title' => 'Diagnóstico WON API',
-                'results' => $results,
-                'report_html' => $diagnostic->generate_html_report($results)
-            ];
-            $this->load->view('won_api/diagnostic_results', $data);
-        } else {
-            set_alert('danger', 'Script de diagnóstico não encontrado.');
-            redirect(admin_url('won_api/configuracoes'));
-        }
     }
     
     /**
