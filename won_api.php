@@ -6,8 +6,8 @@ Module Name: Won API
 Description: Este módulo fornece uma API para integração com o Perfex CRM.
 Author: Won Ecosystem
 Author URI: https://wonecosystem.com.br
-Version: 1.0.0
-Requires at least: 2.3.*
+Version: 2.1.0
+Requires at least: 2.9.2
 */
 
 define('WON_API_MODULE_NAME', 'won_api');
@@ -37,16 +37,16 @@ function won_api_module_init_menu_items()
         ]);
 
         $CI->app_menu->add_sidebar_children_item('won_api', [
-            'slug'     => 'won_api_instructions',
-            'name'     => 'Instruções da API',
-            'href'     => admin_url('won_api/instructions'),
+            'slug'     => 'won_api_documentation',
+            'name'     => 'Documentação',
+            'href'     => admin_url('won_api/documentation'),
             'position' => 10,
         ]);
 
         $CI->app_menu->add_sidebar_children_item('won_api', [
-            'slug'     => 'won_api_tables',
-            'name'     => 'Listar Tabelas',
-            'href'     => admin_url('won_api/tables'),
+            'slug'     => 'won_api_logs',
+            'name'     => 'Logs',
+            'href'     => admin_url('won_api/logs'),
             'position' => 15,
         ]);
     } else {

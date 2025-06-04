@@ -1,8 +1,8 @@
-# WON API - Módulo RESTful para Perfex CRM
+# WON API v2.1.0 - Módulo RESTful para Perfex CRM
 
 ## 📋 Visão Geral
 
-Módulo RESTful completo e seguro para o Perfex CRM com operações CRUD, autenticação por token, rate limiting e logs detalhados.
+Módulo RESTful ultra otimizado para o Perfex CRM com operações CRUD, autenticação por token, rate limiting e logs detalhados.
 
 ## 🚀 Características
 
@@ -10,10 +10,11 @@ Módulo RESTful completo e seguro para o Perfex CRM com operações CRUD, autent
 - **API REST**: Operações CRUD completas, paginação automática, códigos de status HTTP
 - **Monitoramento**: Logs detalhados, códigos de erro padronizados
 - **Validação**: Campos obrigatórios, formatos específicos (email, CPF/CNPJ)
+- **Ultra Compacto**: 78KB total, 15 arquivos essenciais
 
 ## 📚 Tabelas Suportadas
 
-`clients`, `contacts`, `leads`, `projects`, `tasks`, `invoices`, `staff`, `tickets`
+`clients`, `projects`, `tasks`, `staff`, `leads`, `invoices`
 
 ## 🔧 Endpoints
 
@@ -50,11 +51,6 @@ curl -X POST -H "Authorization: TOKEN" -H "Content-Type: application/json" \
      "https://seu-site.com/won_api/won/api/clients"
 ```
 
-## 📊 Códigos de Status
-
-- `200` OK, `201` Created, `400` Bad Request, `401` Unauthorized
-- `404` Not Found, `422` Invalid Data, `429` Rate Limited, `500` Server Error
-
 ## 🔧 Instalação
 
 1. Upload para `/modules/won_api/`
@@ -66,30 +62,24 @@ curl -X POST -H "Authorization: TOKEN" -H "Content-Type: application/json" \
 ### Módulo não aparece
 - Verificar estrutura de diretórios
 - Ajustar permissões: `chmod 755 diretórios`, `chmod 644 arquivos`
-- Executar: `php modules/won_api/diagnostic.php`
+- Executar: `php modules/won_api/verify_install.php`
 
 ### API retorna 404
-- Verificar rotas em `application/config/routes.php`:
-```php
-$route['api/won/(.+)'] = 'won_api/won/$1';
-```
-
-### API retorna 401
-- Regenerar token em Admin > WON API > Configurações
-- Verificar header: `Authorization: SEU_TOKEN`
+- Verificar se o módulo está ativo
+- Confirmar token no header: `Authorization: SEU_TOKEN`
 
 ### Instalação manual
 ```sql
+-- Execute se instalação automática falhar:
 INSERT INTO tblmodules (module_name, installed_version, active) VALUES ('won_api', '2.1.0', 1);
-CREATE TABLE tblwon_api_logs (id INT AUTO_INCREMENT PRIMARY KEY, endpoint VARCHAR(255), method VARCHAR(10), ip_address VARCHAR(45), status INT, response_time FLOAT, date DATETIME);
-INSERT INTO tbloptions (name, value) VALUES ('won_api_token', MD5(RAND())), ('won_api_rate_limit', '100');
+-- Ou execute: php modules/won_api/install_manual.php
 ```
 
 ## 📞 Suporte
 
-1. Documentação: Admin > WON API > Documentação
-2. Diagnóstico: `php modules/won_api/diagnostic.php`
-3. Logs: `application/logs/`
+1. **Documentação**: Admin > WON API > Documentação
+2. **Verificação**: `php modules/won_api/verify_install.php`
+3. **Logs**: Admin > WON API > Logs
 
 ---
-**WON API v2.1.0** - Desenvolvido para Perfex CRM 
+**WON API v2.1.0** - Ultra otimizado para Perfex CRM 2.9.2+ 

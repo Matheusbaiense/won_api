@@ -11,7 +11,7 @@
                                 <h4 class="no-margin"><?php echo $title; ?></h4>
                             </div>
                             <div class="col-md-4 text-right">
-                                <a href="<?php echo admin_url('won_api/instructions'); ?>" class="btn btn-info">
+                                <a href="<?php echo admin_url('won_api/documentation'); ?>" class="btn btn-info">
                                     <i class="fa fa-book"></i> Documentação da API
                                 </a>
                             </div>
@@ -27,12 +27,14 @@
                             </div>
                         </div>
                         
-                        <a href="<?php echo admin_url('won_api/add'); ?>" class="btn btn-primary mbot20">
-                            <i class="fa fa-plus"></i> Adicionar Token
-                        </a>
+                        <?php echo form_open(admin_url('won_api/regenerate_token')); ?>
+                        <button type="submit" class="btn btn-warning mbot20" onclick="return confirm('Tem certeza que deseja regenerar o token? O token atual será invalidado.');">
+                            <i class="fa fa-refresh"></i> Regenerar Token
+                        </button>
+                        <?php echo form_close(); ?>
                         
                         <div class="table-responsive">
-                            <table class="table table-striped table-bordered dt-table">
+                            <table class="table table-striped table-bordered">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -41,7 +43,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (!empty($configs)) { ?>
+                                    <?php if (!empty($configs) && !empty($configs['token'])) { ?>
                                     <tr>
                                         <td><?php echo $configs['id']; ?></td>
                                         <td>
@@ -49,23 +51,21 @@
                                                 <input type="text" class="form-control" id="api-token" value="<?php echo $configs['token']; ?>" readonly>
                                                 <span class="input-group-btn">
                                                     <button class="btn btn-default" type="button" onclick="copyToken()">
-                                                        <i class="fa fa-copy"></i>
+                                                        <i class="fa fa-copy"></i> Copiar
                                                     </button>
                                                 </span>
                                             </div>
                                         </td>
                                         <td>
-                                            <a href="<?php echo admin_url('won_api/edit/' . $configs['id']); ?>" class="btn btn-default btn-icon">
-                                                <i class="fa fa-pencil"></i>
-                                            </a>
-                                            <a href="<?php echo admin_url('won_api/delete/' . $configs['id']); ?>" class="btn btn-danger btn-icon _delete">
-                                                <i class="fa fa-trash"></i>
-                                            </a>
+                                            <span class="label label-success">Ativo</span>
                                         </td>
                                     </tr>
                                     <?php } else { ?>
                                     <tr>
-                                        <td colspan="3" class="text-center">Nenhum token encontrado.</td>
+                                        <td colspan="3" class="text-center">
+                                            <p>Nenhum token configurado.</p>
+                                            <p>Use o botão "Regenerar Token" acima para criar um novo token.</p>
+                                        </td>
                                     </tr>
                                     <?php } ?>
                                 </tbody>
@@ -82,6 +82,7 @@
 function copyToken() {
     var tokenInput = document.getElementById("api-token");
     tokenInput.select();
+    tokenInput.setSelectionRange(0, 99999);
     document.execCommand("copy");
     alert("Token copiado para a área de transferência!");
 }
