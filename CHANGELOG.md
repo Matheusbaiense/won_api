@@ -1,245 +1,107 @@
 # 📝 CHANGELOG - WON API
 
-## v2.1.1 - Versão Limpa e Funcional (2024-01-XX)
+## v2.1.1 - Easy Install Compatible (2024-01-XX)
 
-### 🎯 **CORREÇÃO COMPLETA DA ARQUITETURA**
+### 🎯 **WON API v2.1.1 - Sistema BÁSICO que funciona**
 
-Esta versão foi criada para resolver problemas críticos de conflitos de versões e arquitetura fragmentada identificados na v2.1.2.
+Esta é uma versão **SIMPLES** da WON API, criada para ser 100% compatível com Easy Install do Perfex CRM.
 
-### ✅ **Problemas Resolvidos**
+### ✅ **O que REALMENTE está implementado**
 
-#### 1. **Conflito Massivo de Versões - CORRIGIDO**
-- ❌ **ANTES:** Arquivos misturando v2.1.0, v2.1.1 e v2.1.2
-- ✅ **AGORA:** Versão única 2.1.1 em todos os arquivos
-
-#### 2. **Bibliotecas Órfãs - REMOVIDAS**
-- ❌ **REMOVIDO:** `Won_error_handler.php` (não utilizada)
-- ❌ **REMOVIDO:** `Won_validator.php` (não utilizada)  
-- ❌ **REMOVIDO:** `Won_operations.php` (não utilizada)
-- ✅ **RESULTADO:** Arquitetura limpa sem dependências órfãs
-
-#### 3. **Configurações Órfãs - REMOVIDAS**
-- ❌ **REMOVIDO:** `config/won_api_config.php` (ignorada pelo controller)
-- ❌ **REMOVIDO:** `config/won_api_tables.php` (ignorada pelo controller)
-- ✅ **RESULTADO:** Configurações hardcoded no controller (sem dependências)
-
-#### 4. **Rotas para Endpoints Inexistentes - REMOVIDAS**
-- ❌ **REMOVIDO:** Rotas para `estimate/convert`, `invoice/send`, `dashboard/stats`
-- ✅ **MANTIDO:** Apenas rotas para endpoints implementados
-
-#### 5. **Instalação Ultra-Simplificada**
-- ❌ **ANTES:** Tentava criar tabelas complexas
-- ✅ **AGORA:** Apenas token + configurações básicas via `add_option()`
-
-#### 6. **Controller Defensivo**
-- ❌ **ANTES:** Dependências circulares e configs inexistentes
-- ✅ **AGORA:** Hardcoded, sem dependências externas
-
-#### 7. **Testes Órfãos - REMOVIDOS**
-- ❌ **REMOVIDO:** `api_test_v2_1_2.php` (testava endpoints inexistentes)
-- ✅ **RESULTADO:** Sem testes para funcionalidades não implementadas
-
-#### 8. **Arquivos de Versões Conflitantes - REMOVIDOS**
-- ❌ **REMOVIDO:** `update_v2_1_1.php`, `install_manual.php`, `verify_install.php`
-- ✅ **RESULTADO:** Apenas arquivos essenciais
-
-### 🚀 **Funcionalidades Mantidas**
-
+#### 🔧 **Funcionalidades Básicas**
+- ✅ **CRUD Básico:** GET, POST, PUT, DELETE
 - ✅ **6 Tabelas:** clients, projects, tasks, invoices, leads, staff
-- ✅ **CRUD Completo:** GET, POST, PUT, DELETE
 - ✅ **Autenticação:** X-API-TOKEN (padrão Perfex CRM)
-- ✅ **CORS:** Habilitado para máxima compatibilidade
-- ✅ **Endpoints Especiais:** `/status` (público), `/join` (busca CPF/CNPJ)
-- ✅ **Paginação:** `?page=1&limit=20`
-- ✅ **Busca:** `?search=termo`
-- ✅ **Interface Admin:** Configurações e documentação
-- ✅ **Easy Install:** 100% compatível
-- ✅ **Logs:** Sistema básico do CodeIgniter
+- ✅ **CORS:** Headers básicos habilitados
+- ✅ **Busca CPF/CNPJ:** Endpoint `/join`
+- ✅ **Status Público:** Endpoint `/status`
+- ✅ **Paginação Simples:** `?page=1&limit=20`
+- ✅ **Interface Admin:** Configurações, documentação e logs
 
-### 📁 **Estrutura Limpa**
+#### 🏗️ **Arquitetura Simples**
+- ✅ **Easy Install:** Instalação ultra-simples via `add_option()`
+- ✅ **Sem Dependências:** Controller self-contained
+- ✅ **Configurações Hardcoded:** Sem arquivos de config externos
+- ✅ **Logs Nativos:** Sistema CodeIgniter padrão
+
+### ❌ **O que foi REMOVIDO para compatibilidade**
+
+#### 🚫 **Funcionalidades Avançadas Removidas**
+- ❌ **Rate limiting** (conforme solicitado)
+- ❌ **Validações robustas** de CPF/CNPJ
+- ❌ **Endpoints especializados** (estimate/convert, invoice/send, etc.)
+- ❌ **Sistema de logs avançado**
+- ❌ **Dashboard de métricas**
+- ❌ **Bibliotecas auxiliares** (Won_validator, Won_error_handler)
+
+#### 🗑️ **Arquivos Removidos**
+- ❌ `libraries/Won_error_handler.php`
+- ❌ `libraries/Won_validator.php`
+- ❌ `libraries/Won_operations.php`
+- ❌ `config/won_api_config.php`
+- ❌ `config/won_api_tables.php`
+- ❌ `tests/api_test_v2_1_2.php`
+- ❌ Arquivos de instalação manual
+
+### 🏭 **Estrutura Final Limpa**
 
 ```
 won_api/
-├── won_api.php              # Arquivo principal v2.1.1
-├── install.php              # Instalação ultra-simples
+├── won_api.php              # Arquivo principal (84 linhas)
+├── install.php              # Instalação mínima (40 linhas)
 ├── controllers/
-│   ├── Won.php              # Controller principal limpo
-│   └── Won_api.php          # Controller admin simplificado  
+│   ├── Won.php              # Controller API (340 linhas)
+│   └── Won_api.php          # Controller admin (103 linhas)
 ├── views/
-│   └── configuracoes.php    # Interface simplificada
+│   ├── settings.php         # Configurações administrativas
+│   ├── api_documentation.php # Documentação da API
+│   └── logs.php             # Logs básicos
 ├── config/
-│   └── routes.php           # Apenas rotas necessárias
-├── README.md                # Documentação atualizada
+│   └── routes.php           # Apenas rotas implementadas
+├── README.md                # Documentação honesta
 └── CHANGELOG.md             # Este arquivo
 ```
 
-### 🎯 **Resultado Final**
+### 📊 **Endpoints Reais v2.1.1**
 
-A **WON API v2.1.1** é uma versão **LIMPA, FUNCIONAL e SEM CONFLITOS** que resolve todos os problemas de arquitetura fragmentada da v2.1.2.
+| Método | URL | Descrição | Status |
+|--------|-----|-----------|--------|
+| GET | `/won_api/won/status` | Status da API (público) | ✅ |
+| GET | `/won_api/won/api/clients` | Listar clientes | ✅ |
+| POST | `/won_api/won/api/clients` | Criar cliente | ✅ |
+| PUT | `/won_api/won/api/clients/123` | Atualizar cliente | ✅ |
+| DELETE | `/won_api/won/api/clients/123` | Deletar cliente | ✅ |
+| GET | `/won_api/won/join?vat=CPF` | Buscar por CPF/CNPJ | ✅ |
 
-- ✅ **100% Easy Install** compatível
-- ✅ **Sem dependências órfãs**
-- ✅ **Versão única consistente**
-- ✅ **Arquitetura simplificada**
-- ✅ **Todas as funcionalidades essenciais**
+### 🔧 **Use Cases Realistas**
 
----
+#### ✅ **O que você PODE fazer:**
+- Integrar com n8n para automações básicas
+- Criar/listar/atualizar/deletar registros das 6 tabelas
+- Buscar clientes por CPF/CNPJ
+- Paginar resultados (máximo 100 por página)
+- Usar interface administrativa para configurações
 
-## v2.1.0 - Primeira Versão (2024-01-XX)
+#### ❌ **O que você NÃO pode fazer:**
+- Rate limiting (não implementado)
+- Validações avançadas (não implementado)
+- Endpoints especializados (não implementado)
+- Métricas ou dashboards (não implementado)
+- Logs avançados (não implementado)
 
-### ✅ **Funcionalidades Iniciais**
-- Operações CRUD básicas
-- Autenticação por token
-- Suporte a múltiplas tabelas
-- Interface administrativa básica
+### 🎯 **Objetivo da v2.1.1**
 
-## [2.1.0] - 2024-12-19 🚀 **VERSÃO ROBUSTA PROFISSIONAL**
-
-### 🌟 **Novas Funcionalidades**
-
-#### 🔐 **Segurança Avançada**
-- **Rate limiting robusto** - 100 req/hora com headers informativos
-- **CORS configurável** - Suporte completo para SPAs e frontends
-- **Validações rigorosas** - CPF/CNPJ, email, IDs numéricos
-- **Headers de segurança** - X-Frame-Options, X-Content-Type-Options
-
-#### 🛡️ **Autenticação Mantida**
-- **X-API-TOKEN** padrão Perfex CRM (compatibilidade total)
-- **Hash comparison** segura para tokens
-- **Logs detalhados** de tentativas de autenticação
-
-#### ⚡ **Performance**
-- **Lazy table creation** - Tabelas criadas apenas quando necessário
-- **Queries otimizadas** com índices apropriados
-- **Limpeza automática** de dados antigos (>48h)
-- **Paginação eficiente** com metadados completos
-
-#### 📊 **API REST Completa**
-- **16 códigos de erro** documentados e padronizados
-- **Respostas JSON** consistentes com metadados
-- **Paginação automática** - page, limit, total, has_next_page
-- **Filtros de busca** nos campos configuráveis
-
-#### 🗂️ **Tabelas Suportadas**
-- **clients** - Clientes (company obrigatório)
-- **contacts** - Contatos (userid, firstname, lastname)
-- **leads** - Leads (name obrigatório)
-- **projects** - Projetos (name, clientid)
-- **tasks** - Tarefas (name obrigatório)
-- **invoices** - Faturas (clientid obrigatório)
-
-#### 🔍 **Endpoints Especiais**
-- **JOIN por CPF/CNPJ** - `/join?vat=12345678901`
-- **Status da API** - `/status` (público, sem autenticação)
-- **Health check** completo com informações do sistema
-
-### 🛠️ **Melhorias Técnicas**
-
-#### 📝 **Logs Profissionais**
-- **Structured logging** com contexto completo
-- **Performance metrics** por requisição
-- **Error tracking** detalhado
-- **User-agent** e IP tracking
-
-#### ⚙️ **Configurações Avançadas**
-- **won_api_config.php** - 20+ configurações
-- **CORS origins** configurável
-- **Timeouts** personalizáveis
-- **Memory limits** ajustáveis
-
-#### 🎯 **Validações Robustas**
-- **CPF/CNPJ** - Formatação e dígitos verificadores
-- **Email** - Validação RFC completa
-- **IDs numéricos** - Proteção contra injection
-- **Campos obrigatórios** por tabela
-
-### 📚 **Documentação**
-
-#### 📖 **README Profissional**
-- **309 linhas** de documentação completa
-- **Exemplos práticos** de uso
-- **Códigos de erro** detalhados
-- **Requisitos técnicos** especificados
-
-#### 🧪 **Testes Automatizados**
-- **api_test.php** - 15 cenários de teste
-- **Cobertura completa** de endpoints
-- **Testes de erro** e validação
-- **Performance benchmarks**
-
-#### 🎨 **Interface Administrativa**
-- **Dashboard melhorado** com métricas
-- **Configurações avançadas** organizadas
-- **Logs em tempo real** com filtros
-- **Botão copiar token** integrado
-
-### 🔗 **Compatibilidade**
-
-#### ✅ **Integração n8n**
-- **Headers corretos** para workflow automation
-- **Respostas padronizadas** JSON
-- **Rate limiting** respeitoso
-- **CORS** habilitado por padrão
-
-#### ✅ **Perfex CRM Native**
-- **X-API-TOKEN** mantido como padrão
-- **Estrutura de módulos** respeitada
-- **Hooks nativos** utilizados
-- **Database queries** otimizadas
-
-### 📊 **Métricas v2.1.0**
-- **+1000 linhas** de código adicional
-- **50+ melhorias** implementadas
-- **16 códigos de erro** padronizados
-- **6 tabelas** suportadas nativamente
-- **100% compatibilidade** com Perfex CRM
+Esta versão foi criada para ser uma **API BÁSICA FUNCIONAL** que:
+- ✅ Instala sem erros no Easy Install
+- ✅ Funciona com CRUD simples
+- ✅ É honesta sobre suas limitações
+- ✅ Não promete funcionalidades inexistentes
 
 ---
 
-## [2.0.0] - 2024-12-18 🎉 **VERSÃO INICIAL ROBUSTA**
+### 📝 **Resumo Técnico**
 
-### 🚀 **Funcionalidades Iniciais**
-- **API RESTful** completa para Perfex CRM
-- **Autenticação** via Authorization header
-- **CRUD operations** para principais tabelas
-- **Rate limiting** básico - 100 req/hora
-- **Logs estruturados** de operações
-- **Interface administrativa** básica
+**WON API v2.1.1** é um sistema **BÁSICO** para integração com Perfex CRM que funciona 100% para CRUD simples, sem funcionalidades avançadas ou dependências complexas.
 
-### 🛡️ **Segurança Básica**
-- **Token authentication** seguro
-- **Validação de entrada** básica
-- **Proteção SQL injection** nativa CI
-- **Headers de segurança** básicos
-
-### 📋 **Endpoints v2.0.0**
-- `GET|POST|PUT|DELETE /api/{table}`
-- `GET /api/{table}/{id}`
-- `GET /join?vat={cpf_cnpj}`
-
-### 🎯 **Base Sólida**
-- **Estrutura modular** bem definida
-- **Código limpo** e documentado
-- **Compatibilidade** com Perfex CRM 2.9.2+
-- **Instalação** via módulos nativos
-
----
-
-## 🏆 **Evolução do Projeto**
-
-### 📈 **Crescimento**
-- **v2.0.0**: Base funcional (500 linhas)
-- **v2.1.0**: Versão robusta (+1000 linhas)
-- **v2.1.1**: Instalação corrigida (estável)
-
-### 🎯 **Foco**
-- **Funcionalidade** ✅ Completa
-- **Robustez** ✅ Profissional  
-- **Simplicidade** ✅ Instalação easy
-- **Compatibilidade** ✅ 100% Perfex CRM
-
-### 🚀 **Próximos Passos**
-- Cache inteligente (v2.2.0)
-- Webhooks (v2.2.0)
-- OAuth2 (v2.3.0)
-- GraphQL (v2.3.0) 
+**Ideal para:** Usuários que precisam de integração básica funcional
+**Não ideal para:** Usuários que precisam de funcionalidades avançadas 

@@ -31,7 +31,8 @@ class Won_api extends AdminController
         $data['title'] = 'WON API - Documentação';
         $data['token'] = get_option('won_api_token');
         $data['base_url'] = base_url('won_api/won/');
-        $this->load->view('docs', $data);
+        $data['allowed_tables'] = ['clients', 'projects', 'tasks', 'invoices', 'leads', 'staff'];
+        $this->load->view('api_documentation', $data);
     }
 
     public function regenerate_token()

@@ -2,8 +2,8 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * WON API Routes v2.1.1 - APENAS ROTAS IMPLEMENTADAS
- * Sem rotas fantasma - todas as rotas aqui funcionam
+ * WON API Routes v2.1.1 - APENAS ROTAS QUE REALMENTE FUNCIONAM
+ * Zero rotas fantasma - cada rota tem método implementado no controller
  */
 
 // Rotas da API (implementadas em Won.php)

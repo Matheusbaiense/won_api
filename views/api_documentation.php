@@ -68,11 +68,8 @@ curl -X POST "<?php echo $base_url; ?>api/clients" \
 curl -X GET "<?php echo $base_url; ?>api/clients/1" \
      -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."
 
-# Endpoints especializados v2.1.2
-curl -X POST "<?php echo $base_url; ?>estimate/convert/123" \
-     -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."
-
-curl -X GET "<?php echo $base_url; ?>dashboard/stats" \
+# Buscar por CPF/CNPJ
+curl -X GET "<?php echo $base_url; ?>join?vat=12345678901" \
      -H "X-API-TOKEN: <?php echo substr($token, 0, 16); ?>..."</pre>
                                 
                                 <h5>📋 Headers Obrigatórios</h5>
@@ -81,8 +78,11 @@ curl -X GET "<?php echo $base_url; ?>dashboard/stats" \
                                     <tr><th>Content-Type:</th><td>application/json (POST/PUT)</td></tr>
                                 </table>
                                 
-                                <h5>⚡ Rate Limit</h5>
-                                <p>100 requisições por hora por IP</p>
+                                <h5>✅ Funcionalidades Reais</h5>
+                                <p>• CRUD básico para 6 tabelas<br>
+                                • Busca por CPF/CNPJ via /join<br>
+                                • Status público via /status<br>
+                                • Paginação simples</p>
                                 
                                 <h5>🔍 Códigos de Resposta</h5>
                                 <table class="table table-condensed">
@@ -91,7 +91,6 @@ curl -X GET "<?php echo $base_url; ?>dashboard/stats" \
                                     <tr><td><span class="label label-warning">400</span></td><td>Erro nos dados</td></tr>
                                     <tr><td><span class="label label-danger">401</span></td><td>Token inválido</td></tr>
                                     <tr><td><span class="label label-danger">404</span></td><td>Não encontrado</td></tr>
-                                    <tr><td><span class="label label-danger">429</span></td><td>Rate limit excedido</td></tr>
                                 </table>
                             </div>
                         </div>

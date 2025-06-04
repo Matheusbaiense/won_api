@@ -25,7 +25,7 @@
                             <div class="col-md-12">
                                 <div class="alert alert-info">
                                     <i class="fa fa-info-circle"></i>
-                                    <strong>Logs da WON API v2.1.2</strong><br>
+                                    <strong>Logs da WON API v2.1.1</strong><br>
                                     Exibindo os últimos 20 logs relacionados à API. Os logs são armazenados no sistema padrão do Perfex CRM.
                                 </div>
                             </div>
@@ -138,11 +138,11 @@
                         <!-- Ações -->
                         <div class="row">
                             <div class="col-md-12 text-center">
-                                <a href="<?php echo admin_url('won_api/configuracoes'); ?>" 
+                                <a href="<?php echo admin_url('won_api/settings'); ?>" 
                                    class="btn btn-default">
                                     <i class="fa fa-arrow-left"></i> Voltar às Configurações
                                 </a>
-                                <a href="<?php echo admin_url('won_api/documentation'); ?>" 
+                                <a href="<?php echo admin_url('won_api/docs'); ?>" 
                                    class="btn btn-primary">
                                     <i class="fa fa-book"></i> Ver Documentação
                                 </a>
