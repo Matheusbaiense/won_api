@@ -102,7 +102,19 @@ try {
         }
     }
     
-    // 6. Verificar arquivos críticos
+    // 6. Criar permissões
+    echo "📝 Configurando permissões...\n";
+    if (!$CI->db->get_where(db_prefix() . 'permissions', ['name' => 'won_api'])->row()) {
+        $CI->db->insert(db_prefix() . 'permissions', [
+            'name' => 'won_api',
+            'shortname' => 'won_api'
+        ]);
+        echo "   ✅ Permissões criadas\n";
+    } else {
+        echo "   ✅ Permissões já existem\n";
+    }
+    
+    // 7. Verificar arquivos críticos
     $critical_files = [
         'won_api.php',
         'install.php', 
@@ -126,7 +138,7 @@ try {
         throw new Exception("Arquivos críticos ausentes: " . implode(', ', $missing_files));
     }
     
-    // 7. Limpar cache
+    // 8. Limpar cache
     if (is_dir(APPPATH . 'logs/cache')) {
         $cache_files = glob(APPPATH . 'logs/cache/*won_api*');
         foreach ($cache_files as $file) {

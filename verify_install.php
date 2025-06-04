@@ -122,4 +122,10 @@ echo "   COMANDO: chmod 755 diretórios, chmod 644 arquivos\n\n";
 
 echo "=== VERIFICAÇÃO CONCLUÍDA ===\n";
 echo "Use estas informações para corrigir problemas de instalação.\n";
+
+if (isset($this->results['registration']) && strpos($this->results['registration'], 'ERRO') !== false) {
+    echo "🔧 MÓDULO NÃO APARECE:\n";
+    echo "   1. Execute instalação manual: php install_manual.php\n";
+    echo "   2. SQL direto: INSERT INTO " . db_prefix() . "modules (module_name, installed_version, active) VALUES ('won_api', '2.1.0', 1);\n\n";
+}
 ?> 
